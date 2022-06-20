@@ -4,6 +4,36 @@ from fastapi.encoders import jsonable_encoder
 import re
 
 
+async def cse_article_parser(board: str, article: int):
+    url = f"https://cse.koreatech.ac.kr/index.php?mid={board}&document_srl={article}"
+    response = requests.get(url, verify=False)
+
+    if response.status_code == 200:
+        data_list = []
+        html = response.text
+        soup = BeautifulSoup(html, 'html.parser')
+        posts = soup.select("#main-content > div > div > div.board_read")
+        for post in posts:
+            try:
+                title = post.select_one("div.read_header > h1 > a").get_text().strip()
+                writer = post.select_one("div.read_header > p.meta > a").get_text().strip()
+                text = post.select_one("div.read_body > div:nth-child(1)").decode_contents()
+
+            except AttributeError as e:
+                return jsonable_encoder([{"status": "END"}])
+
+            data_dic = {
+                'title': title,
+                'writer': writer,
+                'text': text
+            }
+            data_list.append(data_dic)
+
+        return jsonable_encoder(data_list)
+    else:
+        return jsonable_encoder({'status_code': response.status_code})
+
+
 async def cse_parser(board: str, page: int):
     url = f"https://cse.koreatech.ac.kr/index.php?mid={board}&page={page}"
     response = requests.get(url, verify=False)
