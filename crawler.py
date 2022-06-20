@@ -1,9 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
 from fastapi.encoders import jsonable_encoder
+import re
 
 
-async def cse_parser(url: str):
+async def cse_parser(board: str, page: int):
+    url = f"https://cse.koreatech.ac.kr/index.php?mid={board}&page={page}"
     response = requests.get(url, verify=False)
 
     if response.status_code == 200:
@@ -19,6 +21,7 @@ async def cse_parser(url: str):
                 write_date = post.select_one("td.time").get_text().strip()
                 read = post.select_one("td.readNum").get_text().strip()
                 url = post.select_one("td.title > a").get('href')
+                article_num = re.findall('(?<=document_srl=)\d+', url)[0]
             except AttributeError as e:
                 return jsonable_encoder([{"status": "END"}])
 
@@ -28,7 +31,7 @@ async def cse_parser(url: str):
                 'writer': writer,
                 'write_date': write_date,
                 'read': read,
-                'url': url
+                'article_num': article_num
             }
             data_list.append(data_dic)
 
@@ -38,15 +41,12 @@ async def cse_parser(url: str):
 
 
 async def cse_notice(page: int = 1):
-    url = f"https://cse.koreatech.ac.kr/index.php?mid=notice&page={page}"
-    return await cse_parser(url)
+    return await cse_parser("notice", page)
 
 
 async def cse_job_board(page: int = 1):
-    url = f"https://cse.koreatech.ac.kr/index.php?mid=jobboard&page={page}"
-    return await cse_parser(url)
+    return await cse_parser("jobboard", page)
 
 
 async def cse_free_board(page: int = 1):
-    url = f"https://cse.koreatech.ac.kr/index.php?mid=freeboard&page={page}"
-    return await cse_parser(url)
+    return await cse_parser("freeboard", page)
