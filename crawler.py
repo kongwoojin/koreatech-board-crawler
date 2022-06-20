@@ -18,6 +18,7 @@ async def cse_parser(url: str):
                 writer = post.select_one("td.author").get_text().strip()
                 write_date = post.select_one("td.time").get_text().strip()
                 read = post.select_one("td.readNum").get_text().strip()
+                url = post.select_one("td.title > a").get('href')
             except AttributeError as e:
                 return jsonable_encoder([{"status": "END"}])
 
@@ -26,7 +27,8 @@ async def cse_parser(url: str):
                 'title': title,
                 'writer': writer,
                 'write_date': write_date,
-                'read': read
+                'read': read,
+                'url': url
             }
             data_list.append(data_dic)
 
