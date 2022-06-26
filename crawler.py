@@ -12,22 +12,44 @@ async def cse_article_parser(board: str, article: int):
         data_list = []
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
-        posts = soup.select("#main-content > div > div > div.board_read")
-        for post in posts:
-            try:
-                title = post.select_one("div.read_header > h1 > a").get_text().strip()
-                writer = post.select_one("div.read_header > p.meta > a").get_text().strip()
-                text = post.select_one("div.read_body > div:nth-child(1)").decode_contents()
+        try:
+            title = soup.select_one(
+                "#main-content > div > div > div.board_read > div.read_header > h1 > a").get_text().strip()
+            writer = soup.select_one(
+                "#main-content > div > div > div.board_read > div.read_header > p.meta > a").get_text().strip()
+            text = soup.select_one(
+                "#main-content > div > div > div.board_read > div.read_body > div:nth-child(1)").decode_contents()
+            date = soup.select_one(
+                "#main-content > div > div > div.board_read > div.read_header > p.time").get_text().strip()
 
-            except AttributeError as e:
-                return jsonable_encoder([{"status": "END"}])
+        except AttributeError as e:
+            return jsonable_encoder([{"status": "END"}])
 
-            data_dic = {
-                'title': title,
-                'writer': writer,
-                'text': text
+        files = soup.select("#main-content > div > div > div.board_read > div.read_footer > div.fileList > ul > li")
+
+        file_list = []
+        for file in files:
+            file_uri = file.select_one("a")["href"]
+            file_name = file.select_one("a").get_text().strip()
+            file_name = re.sub("\[.*]", "", file_name)
+
+            file_dic = {
+                "file_uri": file_uri,
+                "file_name": file_name
             }
-            data_list.append(data_dic)
+
+            print(file_name)
+
+            file_list.append(file_dic)
+
+        data_dic = {
+            'title': title,
+            'writer': writer,
+            'text': text,
+            'date': date,
+            'files': file_list
+        }
+        data_list.append(data_dic)
 
         return jsonable_encoder(data_list)
     else:
