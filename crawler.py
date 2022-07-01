@@ -25,6 +25,8 @@ async def cse_article_parser(board: str, article: int):
         except AttributeError as e:
             return jsonable_encoder([{"status": "END"}])
 
+        text = text.replace("<img", "<br><img")
+
         files = soup.select("#main-content > div > div > div.board_read > div.read_footer > div.fileList > ul > li")
 
         file_list = []
