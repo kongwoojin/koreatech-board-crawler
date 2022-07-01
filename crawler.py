@@ -38,8 +38,6 @@ async def cse_article_parser(board: str, article: int):
                 "file_name": file_name
             }
 
-            print(file_name)
-
             file_list.append(file_dic)
 
         data_dic = {
