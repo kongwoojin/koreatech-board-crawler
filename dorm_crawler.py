@@ -57,7 +57,10 @@ async def dorm_article_parser(url: str):
         return jsonable_encoder({'status_code': response.status_code})
 
 
-async def dorm_parser(board: str, page: int):
+async def dorm_parser(board: str, page: int, is_second_page: bool = False):
+    if not is_second_page:
+        page = page * 2 - 1
+
     url = f"https://dorm.koreatech.ac.kr/content/board/list.php?now_page={page}&GUBN=&SEARCH=&BOARDID={board}"
     response = requests.get(url, verify=False)
 
@@ -91,9 +94,13 @@ async def dorm_parser(board: str, page: int):
 
             data_list.append(data_dic)
 
-        return jsonable_encoder(data_list)
+        if page % 2 == 1:
+            page += 1
+            data_list.extend(await dorm_parser(board, page, True))
+
+        return data_list
     else:
-        return jsonable_encoder({'status_code': response.status_code})
+        return {'status_code': response.status_code}
 
 
 async def dorm_notice(page: int = 1):
@@ -101,4 +108,4 @@ async def dorm_notice(page: int = 1):
 
 
 async def dorm_free_board(page: int = 1):
-    return await dorm_parser("bulletin", page)
+    return await jsonable_encoder(dorm_parser("bulletin", page))
