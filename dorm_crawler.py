@@ -98,9 +98,12 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
             page += 1
             data_list.extend(await dorm_parser(board, page, True))
 
-        return data_list
+        if is_second_page:
+            return data_list
+        else:
+            return jsonable_encoder(data_list)
     else:
-        return {'status_code': response.status_code}
+        return jsonable_encoder({'status_code': response.status_code})
 
 
 async def dorm_notice(page: int = 1):
@@ -108,4 +111,4 @@ async def dorm_notice(page: int = 1):
 
 
 async def dorm_free_board(page: int = 1):
-    return await jsonable_encoder(dorm_parser("bulletin", page))
+    return await dorm_parser("bulletin", page)
