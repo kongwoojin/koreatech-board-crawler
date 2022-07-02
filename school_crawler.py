@@ -4,8 +4,8 @@ from fastapi.encoders import jsonable_encoder
 import re
 
 
-async def school_article_parser(board: str, article: int):
-    url = f"https://cse.koreatech.ac.kr/index.php?mid={board}&document_srl={article}"
+async def school_article_parser(url: str):
+    url = f"https://koreatech.ac.kr/{url}"
     response = requests.get(url, verify=False)
 
     if response.status_code == 200:
@@ -14,20 +14,20 @@ async def school_article_parser(board: str, article: int):
         soup = BeautifulSoup(html, 'html.parser')
         try:
             title = soup.select_one(
-                "#main-content > div > div > div.board_read > div.read_header > h1 > a").get_text().strip()
+                "#board-wrap > div.board-view-head > div.board-view-title > h4 > span").get_text().strip()
             writer = soup.select_one(
-                "#main-content > div > div > div.board_read > div.read_header > p.meta > a").get_text().strip()
+                "#board-wrap > div.board-view-head > div.board-view-title > div > span.txt.name").get_text().strip()
             text = soup.select_one(
-                "#main-content > div > div > div.board_read > div.read_body > div:nth-child(1)").decode_contents()
+                "#boardContents").decode_contents()
             date = soup.select_one(
-                "#main-content > div > div > div.board_read > div.read_header > p.time").get_text().strip()
+                "#board-wrap > div.board-view-head > div.board-view-title > div > span:nth-child(2)").get_text().strip()
 
         except AttributeError as e:
             return jsonable_encoder([{"status": "END"}])
 
         text = text.replace("<img", "<br><img")
 
-        files = soup.select("#main-content > div > div > div.board_read > div.read_footer > div.fileList > ul > li")
+        files = soup.select("#board-wrap > div.board-view-head > div.board-view-winfo > div > ul > li")
 
         file_list = []
         for file in files:
@@ -59,8 +59,6 @@ async def school_article_parser(board: str, article: int):
 async def school_parser(board: str, m_code: str, page: int):
     url = f"https://www.koreatech.ac.kr/kor/CMS/NoticeMgr/{board}.do?mCode={m_code}&page={page}"
     response = requests.get(url, verify=False)
-
-    print(url)
 
     if response.status_code == 200:
         data_list = []

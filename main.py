@@ -43,3 +43,8 @@ async def get_school_notice(params: dict = Depends(school_bachelor_notice)):
 @app.get("/school/covid19/")
 async def get_school_notice(params: dict = Depends(school_covid19_notice)):
     return params
+
+
+@app.get("/school/article/")
+async def get_school_notice(params: dict = Depends(school_article_parser)):
+    return params
