@@ -38,7 +38,7 @@ async def dorm_article_parser(url: str):
 
             file_dic = {
                 "file_uri": file_uri,
-                "file_name": file_name
+                "file_name": f"https://dorm.koreatech.ac.kr{file_name}"
             }
 
             file_list.append(file_dic)
