@@ -1,6 +1,7 @@
 from fastapi import Depends, FastAPI
 from cse_crawler import *
 from school_crawler import *
+from dorm_crawler import *
 
 app = FastAPI()
 
@@ -47,4 +48,19 @@ async def get_school_covid19_notice(params: dict = Depends(school_covid19_notice
 
 @app.get("/school/article/")
 async def get_school_article(params: dict = Depends(school_article_parser)):
+    return params
+
+
+@app.get("/dorm/notice/")
+async def get_dorm_notice(params: dict = Depends(dorm_notice)):
+    return params
+
+
+@app.get("/dorm/free/")
+async def get_dorm_free_board(params: dict = Depends(dorm_free_board)):
+    return params
+
+
+@app.get("/dorm/article/")
+async def get_dorm_article(params: dict = Depends(dorm_article_parser)):
     return params
