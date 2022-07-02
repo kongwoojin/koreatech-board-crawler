@@ -28,12 +28,12 @@ async def dorm_article_parser(url: str):
 
         text = text.replace("<img", "<br><img")
 
-        files = soup.select("#board > div.boardViewer > table.viewer tr:nth-child(3) > td")
+        files = soup.select("#board > div.boardViewer > table.viewer tr:nth-child(3) > td > a")
 
         file_list = []
         for file in files:
-            file_uri = file.select_one("a")["href"]
-            file_name = file.select_one("a").get_text()
+            file_uri = file["href"]
+            file_name = file.get_text()
             file_name = re.sub("\[.*]", "", file_name).strip()
 
             file_dic = {
