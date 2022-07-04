@@ -4,8 +4,7 @@ from fastapi.encoders import jsonable_encoder
 import re
 
 
-async def cse_article_parser(board: str, article: int):
-    url = f"https://cse.koreatech.ac.kr/index.php?mid={board}&document_srl={article}"
+async def cse_article_parser(url: str):
     response = requests.get(url, verify=False)
 
     if response.status_code == 200:
@@ -72,8 +71,7 @@ async def cse_parser(board: str, page: int):
                 writer = post.select_one("td.author").get_text().strip()
                 write_date = post.select_one("td.time").get_text().strip()
                 read = post.select_one("td.readNum").get_text().strip()
-                url = post.select_one("td.title > a").get('href')
-                article_num = re.findall('(?<=document_srl=)\d+', url)[0]
+                article_url = post.select_one("td.title > a").get('href')
             except AttributeError as e:
                 return jsonable_encoder([{"status": "END"}])
 
@@ -83,7 +81,7 @@ async def cse_parser(board: str, page: int):
                 'writer': writer,
                 'write_date': write_date,
                 'read': read,
-                'article_num': article_num
+                'article_url': article_url
             }
             data_list.append(data_dic)
 
