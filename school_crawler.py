@@ -5,7 +5,6 @@ import re
 
 
 async def school_article_parser(url: str):
-    url = f"https://koreatech.ac.kr/{url}"
     response = requests.get(url, verify=False)
 
     if response.status_code == 200:
@@ -86,7 +85,7 @@ async def school_parser(board: str, m_code: str, page: int):
                     'writer': writer,
                     'write_date': write_date,
                     'read': read,
-                    'article_url': article_url
+                    'article_url': f"https://koreatech.ac.kr{article_url}"
                 }
             else:
                 data_dic = {
@@ -95,7 +94,7 @@ async def school_parser(board: str, m_code: str, page: int):
                     'writer': writer,
                     'write_date': write_date,
                     'read': read,
-                    'article_url': article_url
+                    'article_url': f"https://koreatech.ac.kr{article_url}"
                 }
 
             data_list.append(data_dic)

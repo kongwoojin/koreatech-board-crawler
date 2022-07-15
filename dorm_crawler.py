@@ -6,7 +6,6 @@ from fastapi.encoders import jsonable_encoder
 
 
 async def dorm_article_parser(url: str):
-    url = f"https://dorm.koreatech.ac.kr/content/board/{url}"
     response = requests.get(url, verify=False)
 
     if response.status_code == 200:
@@ -89,7 +88,7 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
                 'writer': writer,
                 'write_date': write_date,
                 'read': read,
-                'article_url': article_url
+                'article_url': f"https://dorm.koreatech.ac.kr/content/board/{article_url}"
             }
 
             data_list.append(data_dic)
