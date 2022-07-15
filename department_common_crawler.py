@@ -14,16 +14,12 @@ async def department_common_article_parser(url: str):
         try:
             title = soup.select_one(
                 "h2.artclViewTitle").get_text().strip()
-            print(title)
             writer = soup.select_one(
                 "body > div > div.artclViewHead > div.right > dl:nth-child(3) > dd").get_text().strip()
-            print(writer)
             text = soup.select_one(
                 "div.artclView").decode_contents()
-            print(text)
             date = soup.select_one(
                 "body > div > div.artclViewHead > div.right > dl:nth-child(1) > dd").get_text().strip()
-            print(date)
 
         except AttributeError as e:
             return jsonable_encoder([{"status": "END"}])
@@ -72,15 +68,10 @@ async def department_common_parser(department: str, board_num: int, page: int):
         for post in posts:
             try:
                 num = post.select_one("td._artclTdNum").get_text().strip()
-                print(num)
                 title = post.select_one("td._artclTdTitle > a").get_text().strip().replace("\n", "").replace("\t", "")
-                print(title)
                 writer = post.select_one("td._artclTdWriter").get_text().strip()
-                print(writer)
                 write_date = post.select_one("td._artclTdRdate").get_text().strip()
-                print(write_date)
                 read = post.select_one("td._artclTdAccess").get_text().strip()
-                print(read)
                 article_url = post.select_one("td._artclTdTitle > a").get('href')
             except AttributeError as e:
                 return jsonable_encoder([{"status": "END"}])
