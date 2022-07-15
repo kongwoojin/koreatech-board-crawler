@@ -77,7 +77,7 @@ async def get_mechanical_article(params: dict = Depends(department_common_articl
     return params
 
 
-@app.get("/ide/notice/")
+@app.get("/ite/notice/")
 async def get_ite_notice(params: dict = Depends(ite_notice)):
     return params
 
