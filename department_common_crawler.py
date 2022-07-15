@@ -55,7 +55,10 @@ async def department_common_article_parser(url: str):
         return jsonable_encoder({'status_code': response.status_code})
 
 
-async def department_common_parser(department: str, board_num: int, page: int):
+async def department_common_parser(department: str, board_num: int, page: int, is_second_page: bool = False):
+    if not is_second_page:
+        page = page * 2 - 1
+
     url = f"https://cms3.koreatech.ac.kr/bbs/{department}/{board_num}/artclList.do?page={page}"
 
     response = requests.get(url, verify=False)
@@ -86,7 +89,14 @@ async def department_common_parser(department: str, board_num: int, page: int):
             }
             data_list.append(data_dic)
 
-        return jsonable_encoder(data_list)
+        if page % 2 == 1:
+            page += 1
+            data_list.extend(await department_common_parser(department, board_num, page, True))
+
+        if is_second_page:
+            return data_list
+        else:
+            return jsonable_encoder(data_list)
     else:
         return jsonable_encoder({'status_code': response.status_code})
 
@@ -149,4 +159,3 @@ async def emc_notice(page: int = 1):
 
 async def sim_notice(page: int = 1):
     return await department_common_parser("sim", 373, page)
-
