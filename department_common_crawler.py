@@ -13,7 +13,7 @@ async def department_common_article_parser(url: str):
         soup = BeautifulSoup(html, 'html.parser')
         try:
             title = soup.select_one(
-                "h2.artclViewTitle").get_text().strip()
+                "h2.artclViewTitle").get_text().strip().replace("［", "[").replace("］", "]")
             writer = soup.select_one(
                 "body > div > div.artclViewHead > div.right > dl:nth-child(3) > dd").get_text().strip()
             text = soup.select_one(
@@ -71,7 +71,8 @@ async def department_common_parser(department: str, board_num: int, page: int, i
         for post in posts:
             try:
                 num = post.select_one("td._artclTdNum").get_text().strip()
-                title = post.select_one("td._artclTdTitle > a").get_text().strip().replace("\n", "").replace("\t", "")
+                title = post.select_one("td._artclTdTitle > a").get_text().strip().replace("\n", "") \
+                    .replace("\t", "").replace("［", "[").replace("］", "]")
                 writer = post.select_one("td._artclTdWriter").get_text().strip()
                 write_date = post.select_one("td._artclTdRdate").get_text().strip()
                 read = post.select_one("td._artclTdAccess").get_text().strip()
