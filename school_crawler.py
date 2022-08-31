@@ -2,6 +2,9 @@ import requests
 from bs4 import BeautifulSoup
 from fastapi.encoders import jsonable_encoder
 import re
+from expiringdict import ExpiringDict
+
+cache = ExpiringDict(max_len=10, max_age_seconds=1800)  # Caching data for 30min and caching <= 10 pages per department
 
 
 async def school_article_parser(url: str):
@@ -56,52 +59,56 @@ async def school_article_parser(url: str):
 
 
 async def school_parser(board: str, m_code: str, page: int):
-    url = f"https://www.koreatech.ac.kr/kor/CMS/NoticeMgr/{board}.do?mCode={m_code}&page={page}"
-    response = requests.get(url, verify=False)
+    if cache.get(f'{board}_{page}') is None:
+        url = f"https://www.koreatech.ac.kr/kor/CMS/NoticeMgr/{board}.do?mCode={m_code}&page={page}"
+        response = requests.get(url, verify=False)
 
-    if response.status_code == 200:
-        data_list = []
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
-        posts = soup.select("#board-wrap > div.board-list-wrap > table > tbody > tr")
-        for post in posts:
-            try:
-                num = post.select_one("td.num:nth-child(1)").get_text().strip()
+        if response.status_code == 200:
+            data_list = []
+            html = response.text
+            soup = BeautifulSoup(html, 'html.parser')
+            posts = soup.select("#board-wrap > div.board-list-wrap > table > tbody > tr")
+            for post in posts:
+                try:
+                    num = post.select_one("td.num:nth-child(1)").get_text().strip()
+                    if board == "list" and m_code == "MN230":
+                        notice_type = post.select_one("td:nth-child(2)").get_text().strip()
+                    title = post.select_one("td.subject").get_text().strip()
+                    writer = post.select_one("td.writer").get_text().strip()
+                    write_date = post.select_one("td.date").get_text().strip()
+                    read = post.select_one("td.cnt").get_text().strip()
+                    article_url = post.select_one("td.subject > a").get('href')
+                except AttributeError as e:
+                    return jsonable_encoder([{"status": "END"}])
+
                 if board == "list" and m_code == "MN230":
-                    notice_type = post.select_one("td:nth-child(2)").get_text().strip()
-                title = post.select_one("td.subject").get_text().strip()
-                writer = post.select_one("td.writer").get_text().strip()
-                write_date = post.select_one("td.date").get_text().strip()
-                read = post.select_one("td.cnt").get_text().strip()
-                article_url = post.select_one("td.subject > a").get('href')
-            except AttributeError as e:
-                return jsonable_encoder([{"status": "END"}])
+                    data_dic = {
+                        'num': num,
+                        'notice_type': notice_type,
+                        'title': title,
+                        'writer': writer,
+                        'write_date': write_date,
+                        'read': read,
+                        'article_url': f"https://koreatech.ac.kr{article_url}"
+                    }
+                else:
+                    data_dic = {
+                        'num': num,
+                        'title': title,
+                        'writer': writer,
+                        'write_date': write_date,
+                        'read': read,
+                        'article_url': f"https://koreatech.ac.kr{article_url}"
+                    }
 
-            if board == "list" and m_code == "MN230":
-                data_dic = {
-                    'num': num,
-                    'notice_type': notice_type,
-                    'title': title,
-                    'writer': writer,
-                    'write_date': write_date,
-                    'read': read,
-                    'article_url': f"https://koreatech.ac.kr{article_url}"
-                }
-            else:
-                data_dic = {
-                    'num': num,
-                    'title': title,
-                    'writer': writer,
-                    'write_date': write_date,
-                    'read': read,
-                    'article_url': f"https://koreatech.ac.kr{article_url}"
-                }
+                data_list.append(data_dic)
 
-            data_list.append(data_dic)
-
-        return jsonable_encoder(data_list)
+            cache[f'{board}_{page}'] = data_list
+            return jsonable_encoder(data_list)
+        else:
+            return jsonable_encoder({'status_code': response.status_code})
     else:
-        return jsonable_encoder({'status_code': response.status_code})
+        return jsonable_encoder(cache[f'{board}_{page}'])
 
 
 async def school_general_notice(page: int = 1):

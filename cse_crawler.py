@@ -2,6 +2,9 @@ import requests
 from bs4 import BeautifulSoup
 from fastapi.encoders import jsonable_encoder
 import re
+from expiringdict import ExpiringDict
+
+cache = ExpiringDict(max_len=10, max_age_seconds=1800)  # Caching data for 30min and caching <= 10 pages per department
 
 
 async def cse_article_parser(url: str):
@@ -56,38 +59,43 @@ async def cse_article_parser(url: str):
 
 
 async def cse_parser(board: str, page: int):
-    url = f"https://cse.koreatech.ac.kr/index.php?mid={board}&page={page}"
-    response = requests.get(url, verify=False)
 
-    if response.status_code == 200:
-        data_list = []
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
-        posts = soup.select("#board_list > table > tbody > tr")
-        for post in posts:
-            try:
-                num = post.select_one("td:nth-child(1)").get_text().strip()
-                title = post.select_one("td.title > a").get_text().strip()
-                writer = post.select_one("td.author").get_text().strip()
-                write_date = post.select_one("td.time").get_text().strip()
-                read = post.select_one("td.readNum").get_text().strip()
-                article_url = post.select_one("td.title > a").get('href')
-            except AttributeError as e:
-                return jsonable_encoder([{"status": "END"}])
+    if cache.get(f'{board}_{page}') is None:
+        url = f"https://cse.koreatech.ac.kr/index.php?mid={board}&page={page}"
+        response = requests.get(url, verify=False)
 
-            data_dic = {
-                'num': num,
-                'title': title,
-                'writer': writer,
-                'write_date': write_date,
-                'read': read,
-                'article_url': article_url
-            }
-            data_list.append(data_dic)
+        if response.status_code == 200:
+            data_list = []
+            html = response.text
+            soup = BeautifulSoup(html, 'html.parser')
+            posts = soup.select("#board_list > table > tbody > tr")
+            for post in posts:
+                try:
+                    num = post.select_one("td:nth-child(1)").get_text().strip()
+                    title = post.select_one("td.title > a").get_text().strip()
+                    writer = post.select_one("td.author").get_text().strip()
+                    write_date = post.select_one("td.time").get_text().strip()
+                    read = post.select_one("td.readNum").get_text().strip()
+                    article_url = post.select_one("td.title > a").get('href')
+                except AttributeError as e:
+                    return jsonable_encoder([{"status": "END"}])
 
-        return jsonable_encoder(data_list)
+                data_dic = {
+                    'num': num,
+                    'title': title,
+                    'writer': writer,
+                    'write_date': write_date,
+                    'read': read,
+                    'article_url': article_url
+                }
+                data_list.append(data_dic)
+
+            cache[f'{board}_{page}'] = data_list
+            return jsonable_encoder(data_list)
+        else:
+            return jsonable_encoder({'status_code': response.status_code})
     else:
-        return jsonable_encoder({'status_code': response.status_code})
+        return jsonable_encoder(cache[f'{board}_{page}'])
 
 
 async def cse_notice(page: int = 1):

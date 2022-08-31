@@ -2,6 +2,9 @@ import requests
 from bs4 import BeautifulSoup
 from fastapi.encoders import jsonable_encoder
 import re
+from expiringdict import ExpiringDict
+
+cache = ExpiringDict(max_len=600, max_age_seconds=1800)  # Caching data for 30min and caching <= 10 pages per department
 
 
 async def department_common_article_parser(url: str):
@@ -59,47 +62,51 @@ async def department_common_parser(department: str, board_num: int, page: int, i
     if not is_second_page:
         page = page * 2 - 1
 
-    url = f"https://cms3.koreatech.ac.kr/bbs/{department}/{board_num}/artclList.do?page={page}"
+    if cache.get(f'{department}_{board_num}_{page}') is None:
+        url = f"https://cms3.koreatech.ac.kr/bbs/{department}/{board_num}/artclList.do?page={page}"
+        response = requests.get(url, verify=False)
 
-    response = requests.get(url, verify=False)
+        if response.status_code == 200:
+            data_list = []
+            html = response.text
+            soup = BeautifulSoup(html, 'html.parser')
+            posts = soup.select("table.artclTable > tbody > tr")
+            for post in posts:
+                try:
+                    num = post.select_one("td._artclTdNum").get_text().strip()
+                    title = post.select_one("td._artclTdTitle > a").get_text().strip().replace("\n", "") \
+                        .replace("\t", "").replace("［", "[").replace("］", "]")
+                    writer = post.select_one("td._artclTdWriter").get_text().strip()
+                    write_date = post.select_one("td._artclTdRdate").get_text().strip()
+                    read = post.select_one("td._artclTdAccess").get_text().strip()
+                    article_url = post.select_one("td._artclTdTitle > a").get('href')
+                except AttributeError as e:
+                    return jsonable_encoder([{"status": "END"}])
 
-    if response.status_code == 200:
-        data_list = []
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
-        posts = soup.select("table.artclTable > tbody > tr")
-        for post in posts:
-            try:
-                num = post.select_one("td._artclTdNum").get_text().strip()
-                title = post.select_one("td._artclTdTitle > a").get_text().strip().replace("\n", "") \
-                    .replace("\t", "").replace("［", "[").replace("］", "]")
-                writer = post.select_one("td._artclTdWriter").get_text().strip()
-                write_date = post.select_one("td._artclTdRdate").get_text().strip()
-                read = post.select_one("td._artclTdAccess").get_text().strip()
-                article_url = post.select_one("td._artclTdTitle > a").get('href')
-            except AttributeError as e:
-                return jsonable_encoder([{"status": "END"}])
+                data_dic = {
+                    'num': num,
+                    'title': title,
+                    'writer': writer,
+                    'write_date': write_date,
+                    'read': read,
+                    'article_url': f"https://cms3.koreatech.ac.kr{article_url}"
+                }
+                data_list.append(data_dic)
 
-            data_dic = {
-                'num': num,
-                'title': title,
-                'writer': writer,
-                'write_date': write_date,
-                'read': read,
-                'article_url': f"https://cms3.koreatech.ac.kr{article_url}"
-            }
-            data_list.append(data_dic)
+            if page % 2 == 1:
+                page += 1
+                data_list.extend(await department_common_parser(department, board_num, page, True))
 
-        if page % 2 == 1:
-            page += 1
-            data_list.extend(await department_common_parser(department, board_num, page, True))
-
-        if is_second_page:
-            return data_list
+            if is_second_page:
+                return data_list
+            else:
+                cache[f'{department}_{board_num}_{page}'] = data_list
+                return jsonable_encoder(data_list)
         else:
-            return jsonable_encoder(data_list)
+            return jsonable_encoder({'status_code': response.status_code})
     else:
-        return jsonable_encoder({'status_code': response.status_code})
+        print("cached!")
+        return jsonable_encoder(cache[f'{department}_{board_num}_{page}'])
 
 
 async def mechanical_notice(page: int = 1):

@@ -1,8 +1,10 @@
-import re
-
 import requests
 from bs4 import BeautifulSoup
 from fastapi.encoders import jsonable_encoder
+import re
+from expiringdict import ExpiringDict
+
+cache = ExpiringDict(max_len=10, max_age_seconds=1800)  # Caching data for 30min and caching <= 10 pages per department
 
 
 async def dorm_article_parser(url: str):
@@ -60,49 +62,54 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
     if not is_second_page:
         page = page * 2 - 1
 
-    url = f"https://dorm.koreatech.ac.kr/content/board/list.php?now_page={page}&GUBN=&SEARCH=&BOARDID={board}"
-    response = requests.get(url, verify=False)
+    if cache.get(f'{board}_{page}') is None:
 
-    if response.status_code == 200:
-        data_list = []
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
-        posts = soup.select("#board > table > tbody > tr")
-        for post in posts:
-            try:
-                num = post.select_one("td:nth-child(1)").get_text().strip()
-                title = post.select_one("td:nth-child(2)").get_text().strip()
-                writer = post.select_one("td:nth-child(3)").get_text().strip()
-                write_date = post.select_one("td:nth-child(4)").get_text().strip()
-                if board == "notice":
-                    read = post.select_one("td:nth-child(6)").get_text().strip()
-                else:
-                    read = post.select_one("td:nth-child(5)").get_text().strip()
-                article_url = post.select_one("td:nth-child(2) > a").get('href')
-            except AttributeError as e:
-                return jsonable_encoder([{"status": "END"}])
+        url = f"https://dorm.koreatech.ac.kr/content/board/list.php?now_page={page}&GUBN=&SEARCH=&BOARDID={board}"
+        response = requests.get(url, verify=False)
 
-            data_dic = {
-                'num': num,
-                'title': title,
-                'writer': writer,
-                'write_date': write_date,
-                'read': read,
-                'article_url': f"https://dorm.koreatech.ac.kr/content/board/{article_url}"
-            }
+        if response.status_code == 200:
+            data_list = []
+            html = response.text
+            soup = BeautifulSoup(html, 'html.parser')
+            posts = soup.select("#board > table > tbody > tr")
+            for post in posts:
+                try:
+                    num = post.select_one("td:nth-child(1)").get_text().strip()
+                    title = post.select_one("td:nth-child(2)").get_text().strip()
+                    writer = post.select_one("td:nth-child(3)").get_text().strip()
+                    write_date = post.select_one("td:nth-child(4)").get_text().strip()
+                    if board == "notice":
+                        read = post.select_one("td:nth-child(6)").get_text().strip()
+                    else:
+                        read = post.select_one("td:nth-child(5)").get_text().strip()
+                    article_url = post.select_one("td:nth-child(2) > a").get('href')
+                except AttributeError as e:
+                    return jsonable_encoder([{"status": "END"}])
 
-            data_list.append(data_dic)
+                data_dic = {
+                    'num': num,
+                    'title': title,
+                    'writer': writer,
+                    'write_date': write_date,
+                    'read': read,
+                    'article_url': f"https://dorm.koreatech.ac.kr/content/board/{article_url}"
+                }
 
-        if page % 2 == 1:
-            page += 1
-            data_list.extend(await dorm_parser(board, page, True))
+                data_list.append(data_dic)
 
-        if is_second_page:
-            return data_list
+            if page % 2 == 1:
+                page += 1
+                data_list.extend(await dorm_parser(board, page, True))
+
+            if is_second_page:
+                return data_list
+            else:
+                cache[f'{board}_{page}'] = data_list
+                return jsonable_encoder(data_list)
         else:
-            return jsonable_encoder(data_list)
+            return jsonable_encoder({'status_code': response.status_code})
     else:
-        return jsonable_encoder({'status_code': response.status_code})
+        return jsonable_encoder(cache[f'{board}_{page}'])
 
 
 async def dorm_notice(page: int = 1):
