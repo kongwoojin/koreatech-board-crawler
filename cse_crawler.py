@@ -100,3 +100,7 @@ async def cse_job_board(page: int = 1):
 
 async def cse_free_board(page: int = 1):
     return await cse_parser("freeboard", page)
+
+
+async def cse_pds(page: int = 1):
+    return await cse_parser("pds", page)
