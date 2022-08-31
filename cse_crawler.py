@@ -32,7 +32,7 @@ async def cse_article_parser(url: str):
         for file in files:
             file_uri = file.select_one("a")["href"]
             file_name = file.select_one("a").get_text()
-            file_name = re.sub("\[.*]", "", file_name).strip()
+            file_name = re.sub("\[File.*]", "", file_name).strip()
 
             file_dic = {
                 "file_uri": file_uri,
