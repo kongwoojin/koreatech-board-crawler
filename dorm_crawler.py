@@ -4,7 +4,7 @@ from fastapi.encoders import jsonable_encoder
 import re
 from expiringdict import ExpiringDict
 
-cache = ExpiringDict(max_len=10, max_age_seconds=1800)  # Caching data for 30min and caching <= 10 pages per department
+cache = ExpiringDict(max_len=10, max_age_seconds=300)  # Caching data for 5min and caching <= 10 pages per department
 
 
 async def dorm_article_parser(url: str):
