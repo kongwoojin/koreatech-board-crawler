@@ -5,8 +5,6 @@ from routers.v2 import mechanical, arch, school, dorm, mechatronics, sim, cse, i
 
 app = FastAPI()
 
-app.include_router(api.router)
-
 app.include_router(cse.router)
 app.include_router(arch.router)
 app.include_router(dorm.router)
@@ -17,3 +15,5 @@ app.include_router(mechanical.router)
 app.include_router(mechatronics.router)
 app.include_router(school.router)
 app.include_router(sim.router)
+
+app.include_router(api.router)
