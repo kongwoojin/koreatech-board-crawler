@@ -8,7 +8,6 @@ async def cse_article_parser(url: str):
     response = requests.get(url, verify=False)
 
     if response.status_code == 200:
-        data_list = []
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
         try:
@@ -48,9 +47,8 @@ async def cse_article_parser(url: str):
             'date': date,
             'files': file_list
         }
-        data_list.append(data_dic)
 
-        return jsonable_encoder(data_list)
+        return jsonable_encoder(data_dic)
     else:
         return jsonable_encoder({'status_code': response.status_code})
 
@@ -60,10 +58,16 @@ async def cse_parser(board: str, page: int):
     response = requests.get(url, verify=False)
 
     if response.status_code == 200:
-        data_list = []
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
+
+        last_page = soup.select_one("div.pagination > a.direction.next").get('href')
+        last_page = re.search("(?<=page=)\d*", last_page).group(0)
+
+        data_list = []
+
         posts = soup.select("#board_list > table > tbody > tr")
+
         for post in posts:
             try:
                 num = post.select_one("td:nth-child(1)").get_text().strip()
@@ -72,20 +76,21 @@ async def cse_parser(board: str, page: int):
                 write_date = post.select_one("td.time").get_text().strip()
                 read = post.select_one("td.readNum").get_text().strip()
                 article_url = post.select_one("td.title > a").get('href')
+
+                data_dic = {
+                    'num': num,
+                    'title': title,
+                    'writer': writer,
+                    'write_date': write_date,
+                    'read': read,
+                    'article_url': article_url
+                }
+
+                data_list.append(data_dic)
             except AttributeError as e:
-                return jsonable_encoder([{"status": "END"}])
+                print(e)
 
-            data_dic = {
-                'num': num,
-                'title': title,
-                'writer': writer,
-                'write_date': write_date,
-                'read': read,
-                'article_url': article_url
-            }
-            data_list.append(data_dic)
-
-        return jsonable_encoder(data_list)
+        return jsonable_encoder({'last_page': last_page, 'posts': data_list})
     else:
         return jsonable_encoder({'status_code': response.status_code})
 

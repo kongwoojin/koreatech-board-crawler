@@ -8,7 +8,6 @@ async def department_common_article_parser(url: str):
     response = requests.get(url, verify=False)
 
     if response.status_code == 200:
-        data_list = []
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
         try:
@@ -48,9 +47,8 @@ async def department_common_article_parser(url: str):
             'date': date,
             'files': file_list
         }
-        data_list.append(data_dic)
 
-        return jsonable_encoder(data_list)
+        return jsonable_encoder(data_dic)
     else:
         return jsonable_encoder({'status_code': response.status_code})
 
@@ -67,6 +65,11 @@ async def department_common_parser(department: str, board_num: int, page: int, i
         data_list = []
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
+
+        if not is_second_page:
+            last_page = soup.select_one("a._last").get('href')
+            last_page = re.search("(?<=javascript:page_link\(')\d*", last_page).group(0)
+
         posts = soup.select("table.artclTable > tbody > tr")
         for post in posts:
             try:
@@ -77,18 +80,18 @@ async def department_common_parser(department: str, board_num: int, page: int, i
                 write_date = post.select_one("td._artclTdRdate").get_text().strip()
                 read = post.select_one("td._artclTdAccess").get_text().strip()
                 article_url = post.select_one("td._artclTdTitle > a").get('href')
-            except AttributeError as e:
-                return jsonable_encoder([{"status": "END"}])
 
-            data_dic = {
-                'num': num,
-                'title': title,
-                'writer': writer,
-                'write_date': write_date,
-                'read': read,
-                'article_url': f"https://cms3.koreatech.ac.kr{article_url}"
-            }
-            data_list.append(data_dic)
+                data_dic = {
+                    'num': num,
+                    'title': title,
+                    'writer': writer,
+                    'write_date': write_date,
+                    'read': read,
+                    'article_url': f"https://cms3.koreatech.ac.kr{article_url}"
+                }
+                data_list.append(data_dic)
+            except AttributeError as e:
+                print(e)
 
         if page % 2 == 1:
             page += 1
@@ -97,7 +100,7 @@ async def department_common_parser(department: str, board_num: int, page: int, i
         if is_second_page:
             return data_list
         else:
-            return jsonable_encoder(data_list)
+            return jsonable_encoder({'last_page': last_page, 'posts': data_list})
     else:
         return jsonable_encoder({'status_code': response.status_code})
 

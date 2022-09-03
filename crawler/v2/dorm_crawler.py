@@ -9,7 +9,6 @@ async def dorm_article_parser(url: str):
     response = requests.get(url, verify=False)
 
     if response.status_code == 200:
-        data_list = []
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
         try:
@@ -49,9 +48,8 @@ async def dorm_article_parser(url: str):
             'date': date,
             'files': file_list
         }
-        data_list.append(data_dic)
 
-        return jsonable_encoder(data_list)
+        return jsonable_encoder(data_dic)
     else:
         return jsonable_encoder({'status_code': response.status_code})
 
@@ -67,6 +65,11 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
         data_list = []
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
+
+        if not is_second_page:
+            last_page = soup.select_one("#board > ul > li:last-child > a").get('href')
+            last_page = re.search("(?<=now_page=)\d*", last_page).group(0)
+
         posts = soup.select("#board > table > tbody > tr")
         for post in posts:
             try:
@@ -100,7 +103,7 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
         if is_second_page:
             return data_list
         else:
-            return jsonable_encoder(data_list)
+            return jsonable_encoder({'last_page': last_page, 'posts': data_list})
     else:
         return jsonable_encoder({'status_code': response.status_code})
 
