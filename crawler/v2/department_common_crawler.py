@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from fastapi.encoders import jsonable_encoder
 import re
+import math
 
 
 async def department_common_article_parser(url: str):
@@ -70,6 +71,7 @@ async def department_common_parser(department: str, board_num: int, page: int, i
             last_page = soup.select_one("a._last").get('href')
             last_page = re.search("(?<=javascript:page_link\(')\d*", last_page).group(0)
             last_page = int(last_page)
+            last_page = math.ceil(last_page / 2)
 
         posts = soup.select("table.artclTable > tbody > tr")
         for post in posts:
