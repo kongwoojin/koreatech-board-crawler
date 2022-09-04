@@ -8,16 +8,16 @@ router = APIRouter(
 )
 
 
-@router.get("/ide/notice/")
+@router.get("/notice/")
 async def get_ide_notice(params: dict = Depends(ide_notice)):
     return params
 
 
-@router.get("/ide/free/")
+@router.get("/free/")
 async def get_ide_free_board(params: dict = Depends(ide_free_board)):
     return params
 
 
-@router.get("/ide/article/")
+@router.get("/article/")
 async def get_ide_article(params: dict = Depends(department_common_article_parser)):
     return params
