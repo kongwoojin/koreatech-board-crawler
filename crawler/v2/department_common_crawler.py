@@ -76,6 +76,9 @@ async def department_common_parser(department: str, board_num: int, page: int, i
         posts = soup.select("table.artclTable > tbody > tr")
         for post in posts:
             try:
+                if is_second_page and post.has_attr('class') and 'headline' in post['class']:
+                    continue
+
                 num = post.select_one("td._artclTdNum").get_text().strip()
                 title = post.select_one("td._artclTdTitle > a").get_text().strip().replace("\n", "") \
                     .replace("\t", "").replace("［", "[").replace("］", "]")
