@@ -69,6 +69,7 @@ async def department_common_parser(department: str, board_num: int, page: int, i
         if not is_second_page:
             last_page = soup.select_one("a._last").get('href')
             last_page = re.search("(?<=javascript:page_link\(')\d*", last_page).group(0)
+            last_page = int(last_page)
 
         posts = soup.select("table.artclTable > tbody > tr")
         for post in posts:

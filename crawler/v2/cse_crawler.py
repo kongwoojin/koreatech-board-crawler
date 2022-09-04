@@ -63,6 +63,7 @@ async def cse_parser(board: str, page: int):
 
         last_page = soup.select_one("div.pagination > a.direction.next").get('href')
         last_page = re.search("(?<=page=)\d*", last_page).group(0)
+        last_page = int(last_page)
 
         data_list = []
 

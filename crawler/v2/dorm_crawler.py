@@ -1,8 +1,7 @@
-import re
-
 import requests
 from bs4 import BeautifulSoup
 from fastapi.encoders import jsonable_encoder
+import re
 
 
 async def dorm_article_parser(url: str):
@@ -69,6 +68,7 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
         if not is_second_page:
             last_page = soup.select_one("#board > ul > li:last-child > a").get('href')
             last_page = re.search("(?<=now_page=)\d*", last_page).group(0)
+            last_page = int(last_page)
 
         posts = soup.select("#board > table > tbody > tr")
         for post in posts:
