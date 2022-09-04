@@ -25,6 +25,11 @@ async def get_cse_free_board(params: dict = Depends(cse_free_board)):
     return params
 
 
+@router.get("/cse/pds/")
+async def get_cse_pds(params: dict = Depends(cse_pds)):
+    return params
+
+
 @router.get("/cse/article/")
 async def get_cse_article(params: dict = Depends(cse_article_parser)):
     return params
