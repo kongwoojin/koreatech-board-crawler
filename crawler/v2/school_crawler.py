@@ -62,7 +62,10 @@ async def school_parser(board: str, m_code: str, page: int):
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
 
-        last_page = soup.select_one("#board-wrap > div.board-list-paging > div > a.lastpage").get('href')
+        if soup.find("#board-wrap > div.board-list-paging > div > a.lastpage"):
+            last_page = soup.select_one("#board-wrap > div.board-list-paging > div > a.lastpage").get('href')
+        else:
+            last_page = soup.select("div.pagelist > a")[-1].get('href')
         last_page = re.search("(?<=page=)\d*", last_page).group(0)
 
         posts = soup.select("#board-wrap > div.board-list-wrap > table > tbody > tr")
