@@ -67,8 +67,8 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
         soup = BeautifulSoup(html, 'html.parser')
 
         if not is_second_page:
-            last_page = soup.select_one("#board > ul > li:last-child > a").get('href')
-            last_page = re.search("(?<=now_page=)\d*", last_page).group(0)
+            last_page = soup.select_one("#board > p.listCount").text.strip()
+            last_page = re.search("(?<=\/)\d*", last_page).group(0)
             last_page = int(last_page)
             last_page = math.ceil(last_page / 2)
 
