@@ -62,12 +62,15 @@ async def school_parser(board: str, m_code: str, page: int):
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
 
-        if soup.find("#board-wrap > div.board-list-paging > div > a.lastpage"):
-            last_page = soup.select_one("#board-wrap > div.board-list-paging > div > a.lastpage").get('href')
-        else:
-            last_page = soup.select("div.pagelist > a")[-1].get('href')
-        last_page = re.search("(?<=page=)\d*", last_page).group(0)
-        last_page = int(last_page)
+        try:
+            if soup.find("#board-wrap > div.board-list-paging > div > a.lastpage"):
+                last_page = soup.select_one("#board-wrap > div.board-list-paging > div > a.lastpage").get('href')
+            else:
+                last_page = soup.select("div.pagelist > a")[-1].get('href')
+            last_page = re.search("(?<=page=)\d*", last_page).group(0)
+            last_page = int(last_page)
+        except AttributeError:
+            return jsonable_encoder({'last_page': -1, 'posts': []})
 
         posts = soup.select("#board-wrap > div.board-list-wrap > table > tbody > tr")
         for post in posts:
@@ -81,7 +84,7 @@ async def school_parser(board: str, m_code: str, page: int):
                 read = post.select_one("td.cnt").get_text().strip()
                 article_url = post.select_one("td.subject > a").get('href')
             except AttributeError as e:
-                return jsonable_encoder([{"status": "END"}])
+                return jsonable_encoder({'last_page': -1, 'posts': []})
 
             if board == "list" and m_code == "MN230":
                 data_dic = {

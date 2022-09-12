@@ -61,9 +61,12 @@ async def cse_parser(board: str, page: int):
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
 
-        last_page = soup.select_one("div.pagination > a.direction.next").get('href')
-        last_page = re.search("(?<=page=)\d*", last_page).group(0)
-        last_page = int(last_page)
+        try:
+            last_page = soup.select_one("div.pagination > a.direction.next").get('href')
+            last_page = re.search("(?<=page=)\d*", last_page).group(0)
+            last_page = int(last_page)
+        except AttributeError:
+            return jsonable_encoder({'last_page': -1, 'posts': []})
 
         data_list = []
 

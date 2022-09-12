@@ -67,10 +67,13 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
         soup = BeautifulSoup(html, 'html.parser')
 
         if not is_second_page:
-            last_page = soup.select_one("#board > p.listCount").text.strip()
-            last_page = re.search("(?<=\/)\d*", last_page).group(0)
-            last_page = int(last_page)
-            last_page = math.ceil(last_page / 2)
+            try:
+                last_page = soup.select_one("#board > p.listCount").text.strip()
+                last_page = re.search("(?<=\/)\d*", last_page).group(0)
+                last_page = int(last_page)
+                last_page = math.ceil(last_page / 2)
+            except AttributeError:
+                return jsonable_encoder({'last_page': -1, 'posts': []})
 
         posts = soup.select("#board > table > tbody > tr")
         for post in posts:
@@ -85,7 +88,7 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
                     read = post.select_one("td:nth-child(5)").get_text().strip()
                 article_url = post.select_one("td:nth-child(2) > a").get('href')
             except AttributeError as e:
-                return jsonable_encoder([{"status": "END"}])
+                return jsonable_encoder({'last_page': -1, 'posts': []})
 
             data_dic = {
                 'num': num,
