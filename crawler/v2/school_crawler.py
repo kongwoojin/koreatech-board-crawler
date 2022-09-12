@@ -65,9 +65,13 @@ async def school_parser(board: str, m_code: str, page: int):
         try:
             if soup.find("#board-wrap > div.board-list-paging > div > a.lastpage"):
                 last_page = soup.select_one("#board-wrap > div.board-list-paging > div > a.lastpage").get('href')
+                last_page = re.search("(?<=page=)\d*", last_page).group(0)
             else:
-                last_page = soup.select("div.pagelist > a")[-1].get('href')
-            last_page = re.search("(?<=page=)\d*", last_page).group(0)
+                last_page_a = soup.select("div.pagelist > a")[-1].get('href')
+                last_page_a = re.search("(?<=page=)\d*", last_page_a).group(0)
+                last_page_strong = soup.select_one("#board-wrap > div.board-list-paging > div > strong").text.strip()
+                last_page = last_page_a if last_page_a >= last_page_strong else last_page_strong
+
             last_page = int(last_page)
         except AttributeError:
             return jsonable_encoder({'last_page': -1, 'posts': []})
