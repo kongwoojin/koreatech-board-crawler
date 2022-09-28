@@ -21,8 +21,8 @@ async def department_common_article_parser(url: str):
             date = soup.select_one(
                 "body > div > div.artclViewHead > div.right > dl:nth-child(1) > dd").get_text().strip()
 
-        except AttributeError as e:
-            return jsonable_encoder([{"status": "END"}])
+        except AttributeError:
+            return jsonable_encoder([{"status_code": 404}])
 
         text = text.replace("<img", "<br><img")
 

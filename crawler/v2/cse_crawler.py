@@ -20,8 +20,8 @@ async def cse_article_parser(url: str):
             date = soup.select_one(
                 "#main-content > div > div > div.board_read > div.read_header > p.time").get_text().strip()
 
-        except AttributeError as e:
-            return jsonable_encoder([{"status": "END"}])
+        except AttributeError:
+            return jsonable_encoder([{"status_code": 404}])
 
         text = text.replace("<img", "<br><img")
 
