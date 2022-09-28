@@ -21,8 +21,8 @@ async def dorm_article_parser(url: str):
             date = soup.select_one(
                 "#board > div.boardViewer > table.viewer tr:nth-child(2) > td:nth-child(4)").get_text().strip()
 
-        except AttributeError as e:
-            return jsonable_encoder([{"status": "END"}])
+        except AttributeError:
+            return jsonable_encoder([{"status_code": 404}])
 
         text = text.replace("<img", "<br><img")
 
