@@ -96,8 +96,8 @@ async def cse_parser(board: str, page: int):
                     }
 
                     data_list.append(data_dic)
-                except AttributeError as e:
-                    print(e)
+                except AttributeError:
+                    return jsonable_encoder({'last_page': -1, 'posts': []})
 
                 board_cache[f'{board}_{page}'] = data_list
                 last_page_cache[board] = last_page

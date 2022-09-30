@@ -92,7 +92,7 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
                     else:
                         read = post.select_one("td:nth-child(5)").get_text().strip()
                     article_url = post.select_one("td:nth-child(2) > a").get('href')
-                except AttributeError as e:
+                except AttributeError:
                     return jsonable_encoder({'last_page': -1, 'posts': []})
 
                 data_dic = {
