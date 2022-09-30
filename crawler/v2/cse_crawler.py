@@ -2,6 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 from fastapi.encoders import jsonable_encoder
 import re
+from expiringdict import ExpiringDict
+
+board_cache = ExpiringDict(max_len=12, max_age_seconds=300)  # Caching board data for 5min
+last_page_cache = ExpiringDict(max_len=4, max_age_seconds=86400)  # Caching last_page data for 1day
 
 
 async def cse_article_parser(url: str):
@@ -54,49 +58,54 @@ async def cse_article_parser(url: str):
 
 
 async def cse_parser(board: str, page: int):
-    url = f"https://cse.koreatech.ac.kr/index.php?mid={board}&page={page}"
-    response = requests.get(url, verify=False)
+    if board_cache.get(f'{board}_{page}') is None or last_page_cache.get(board) is None:
+        url = f"https://cse.koreatech.ac.kr/index.php?mid={board}&page={page}"
+        response = requests.get(url, verify=False)
 
-    if response.status_code == 200:
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
+        if response.status_code == 200:
+            html = response.text
+            soup = BeautifulSoup(html, 'html.parser')
 
-        try:
-            last_page = soup.select_one("div.pagination > a.direction.next").get('href')
-            last_page = re.search("(?<=page=)\d*", last_page).group(0)
-            last_page = int(last_page)
-        except AttributeError:
-            return jsonable_encoder({'last_page': -1, 'posts': []})
-
-        data_list = []
-
-        posts = soup.select("#board_list > table > tbody > tr")
-
-        for post in posts:
             try:
-                num = post.select_one("td:nth-child(1)").get_text().strip()
-                title = post.select_one("td.title > a").get_text().strip()
-                writer = post.select_one("td.author").get_text().strip()
-                write_date = post.select_one("td.time").get_text().strip()
-                read = post.select_one("td.readNum").get_text().strip()
-                article_url = post.select_one("td.title > a").get('href')
+                last_page = soup.select_one("div.pagination > a.direction.next").get('href')
+                last_page = re.search("(?<=page=)\d*", last_page).group(0)
+                last_page = int(last_page)
+            except AttributeError:
+                return jsonable_encoder({'last_page': -1, 'posts': []})
 
-                data_dic = {
-                    'num': num,
-                    'title': title,
-                    'writer': writer,
-                    'write_date': write_date,
-                    'read': read,
-                    'article_url': article_url
-                }
+            data_list = []
 
-                data_list.append(data_dic)
-            except AttributeError as e:
-                print(e)
+            posts = soup.select("#board_list > table > tbody > tr")
 
-        return jsonable_encoder({'last_page': last_page, 'posts': data_list})
+            for post in posts:
+                try:
+                    num = post.select_one("td:nth-child(1)").get_text().strip()
+                    title = post.select_one("td.title > a").get_text().strip()
+                    writer = post.select_one("td.author").get_text().strip()
+                    write_date = post.select_one("td.time").get_text().strip()
+                    read = post.select_one("td.readNum").get_text().strip()
+                    article_url = post.select_one("td.title > a").get('href')
+
+                    data_dic = {
+                        'num': num,
+                        'title': title,
+                        'writer': writer,
+                        'write_date': write_date,
+                        'read': read,
+                        'article_url': article_url
+                    }
+
+                    data_list.append(data_dic)
+                except AttributeError as e:
+                    print(e)
+
+                board_cache[f'{board}_{page}'] = data_list
+                last_page_cache[board] = last_page
+            return jsonable_encoder({'last_page': last_page, 'posts': data_list})
+        else:
+            return jsonable_encoder({'status_code': response.status_code})
     else:
-        return jsonable_encoder({'status_code': response.status_code})
+        return jsonable_encoder({'last_page': last_page_cache.get(board), 'posts': board_cache.get(f'{board}_{page}')})
 
 
 async def cse_notice(page: int = 1):
