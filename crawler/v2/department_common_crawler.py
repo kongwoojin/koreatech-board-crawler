@@ -3,6 +3,10 @@ from bs4 import BeautifulSoup
 from fastapi.encoders import jsonable_encoder
 import re
 import math
+from expiringdict import ExpiringDict
+
+board_cache = ExpiringDict(max_len=45, max_age_seconds=300)  # Caching board data for 5min
+last_page_cache = ExpiringDict(max_len=15, max_age_seconds=86400)  # Caching last_page data for 1day
 
 
 async def department_common_article_parser(url: str):
@@ -58,60 +62,67 @@ async def department_common_parser(department: str, board_num: int, page: int, i
     if not is_second_page:
         page = page * 2 - 1
 
-    url = f"https://cms3.koreatech.ac.kr/bbs/{department}/{board_num}/artclList.do?page={page}"
+    if board_cache.get(f'{department}_{board_num}_{page}') is None or \
+            last_page_cache.get(f'{department}_{board_num}') is None:
 
-    response = requests.get(url, verify=False)
+        url = f"https://cms3.koreatech.ac.kr/bbs/{department}/{board_num}/artclList.do?page={page}"
 
-    if response.status_code == 200:
-        data_list = []
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
+        response = requests.get(url, verify=False)
 
-        if not is_second_page:
-            try:
-                last_page = soup.select_one("a._last").get('href')
-                last_page = re.search("(?<=javascript:page_link\(')\d*", last_page).group(0)
-                last_page = int(last_page)
-                last_page = math.ceil(last_page / 2)
-            except AttributeError:
-                return jsonable_encoder({'last_page': -1, 'posts': []})
+        if response.status_code == 200:
+            data_list = []
+            html = response.text
+            soup = BeautifulSoup(html, 'html.parser')
 
-        posts = soup.select("table.artclTable > tbody > tr")
-        for post in posts:
-            try:
-                if is_second_page and post.has_attr('class') and 'headline' in post['class']:
-                    continue
+            if not is_second_page:
+                try:
+                    last_page = soup.select_one("a._last").get('href')
+                    last_page = re.search("(?<=javascript:page_link\(')\d*", last_page).group(0)
+                    last_page = int(last_page)
+                    last_page = math.ceil(last_page / 2)
+                except AttributeError:
+                    return jsonable_encoder({'last_page': -1, 'posts': []})
 
-                num = post.select_one("td._artclTdNum").get_text().strip()
-                title = post.select_one("td._artclTdTitle > a").get_text().strip().replace("\n", "") \
-                    .replace("\t", "").replace("［", "[").replace("］", "]")
-                writer = post.select_one("td._artclTdWriter").get_text().strip()
-                write_date = post.select_one("td._artclTdRdate").get_text().strip()
-                read = post.select_one("td._artclTdAccess").get_text().strip()
-                article_url = post.select_one("td._artclTdTitle > a").get('href')
+            posts = soup.select("table.artclTable > tbody > tr")
+            for post in posts:
+                try:
+                    if is_second_page and post.has_attr('class') and 'headline' in post['class']:
+                        continue
 
-                data_dic = {
-                    'num': num,
-                    'title': title,
-                    'writer': writer,
-                    'write_date': write_date,
-                    'read': read,
-                    'article_url': f"https://cms3.koreatech.ac.kr{article_url}"
-                }
-                data_list.append(data_dic)
-            except AttributeError:
-                return jsonable_encoder({'last_page': -1, 'posts': []})
+                    num = post.select_one("td._artclTdNum").get_text().strip()
+                    title = post.select_one("td._artclTdTitle > a").get_text().strip().replace("\n", "") \
+                        .replace("\t", "").replace("［", "[").replace("］", "]")
+                    writer = post.select_one("td._artclTdWriter").get_text().strip()
+                    write_date = post.select_one("td._artclTdRdate").get_text().strip()
+                    read = post.select_one("td._artclTdAccess").get_text().strip()
+                    article_url = post.select_one("td._artclTdTitle > a").get('href')
 
-        if page % 2 == 1:
-            page += 1
-            data_list.extend(await department_common_parser(department, board_num, page, True))
+                    data_dic = {
+                        'num': num,
+                        'title': title,
+                        'writer': writer,
+                        'write_date': write_date,
+                        'read': read,
+                        'article_url': f"https://cms3.koreatech.ac.kr{article_url}"
+                    }
+                    data_list.append(data_dic)
+                except AttributeError:
+                    return jsonable_encoder({'last_page': -1, 'posts': []})
 
-        if is_second_page:
-            return data_list
+            if page % 2 == 1:
+                data_list.extend(await department_common_parser(department, board_num, page + 1, True))
+
+            if is_second_page:
+                return data_list
+            else:
+                board_cache[f'{department}_{board_num}_{page}'] = data_list
+                last_page_cache[f'{department}_{board_num}'] = last_page
+                return jsonable_encoder({'last_page': last_page, 'posts': data_list})
         else:
-            return jsonable_encoder({'last_page': last_page, 'posts': data_list})
+            return jsonable_encoder({'status_code': response.status_code})
     else:
-        return jsonable_encoder({'status_code': response.status_code})
+        return jsonable_encoder({'last_page': last_page_cache.get(f'{department}_{board_num}'),
+                                 'posts': board_cache.get(f'{department}_{board_num}_{page}')})
 
 
 async def mechanical_notice(page: int = 1):
