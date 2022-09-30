@@ -85,6 +85,7 @@ async def cse_parser(board: str, page: int):
                     write_date = post.select_one("td.time").get_text().strip()
                     read = post.select_one("td.readNum").get_text().strip()
                     article_url = post.select_one("td.title > a").get('href')
+                    article_url = re.sub("&page=\d*", "", article_url)
 
                     data_dic = {
                         'num': num,
