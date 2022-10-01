@@ -5,7 +5,7 @@ import re
 import math
 from expiringdict import ExpiringDict
 
-board_cache = ExpiringDict(max_len=6, max_age_seconds=300)  # Caching board data for 5min
+board_cache = ExpiringDict(max_len=100, max_age_seconds=300)  # Caching board data for 5min
 last_page_cache = ExpiringDict(max_len=2, max_age_seconds=86400)  # Caching last_page data for 1day
 
 
