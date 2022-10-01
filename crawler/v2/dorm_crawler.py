@@ -46,6 +46,7 @@ async def dorm_article_parser(url: str):
             file_list.append(file_dic)
 
         data_dic = {
+            'status_code': response.status_code,
             'title': title,
             'writer': writer,
             'text': text,
@@ -74,7 +75,7 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
             if not is_second_page:
                 if last_page_cache.get(board) is not None:
                     if last_page_cache.get(board) < page:
-                        return jsonable_encoder({'last_page': -1, 'posts': []})
+                        return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
                     else:
                         last_page = last_page_cache.get(board)
                 else:
@@ -84,7 +85,7 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
                         last_page = int(last_page)
                         last_page = math.ceil(last_page / 2)
                     except AttributeError:
-                        return jsonable_encoder({'last_page': -1, 'posts': []})
+                        return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
 
             posts = soup.select("#board > table > tbody > tr")
             for post in posts:
@@ -101,7 +102,7 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
                     article_url = re.sub("&now_page=\d*", "", article_url)
 
                 except AttributeError:
-                    return jsonable_encoder({'last_page': -1, 'posts': []})
+                    return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
 
                 data_dic = {
                     'num': num,
@@ -124,11 +125,11 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
                 if last_page_cache.get(board) is None:
                     last_page_cache[board] = last_page
 
-                return jsonable_encoder({'last_page': last_page, 'posts': data_list})
+                return jsonable_encoder({'status_code': response.status_code, 'last_page': last_page, 'posts': data_list})
         else:
             return jsonable_encoder({'status_code': response.status_code})
     else:
-        return jsonable_encoder({'last_page': last_page_cache.get(board), 'posts': board_cache.get(f'{board}_{page}')})
+        return jsonable_encoder({'status_code': 200, 'last_page': last_page_cache.get(board), 'posts': board_cache.get(f'{board}_{page}')})
 
 
 async def dorm_notice(page: int = 1):

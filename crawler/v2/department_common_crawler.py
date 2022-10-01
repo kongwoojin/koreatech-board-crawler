@@ -46,6 +46,7 @@ async def department_common_article_parser(url: str):
             file_list.append(file_dic)
 
         data_dic = {
+            'status_code': response.status_code,
             'title': title,
             'writer': writer,
             'text': text,
@@ -77,7 +78,7 @@ async def department_common_parser(department: str, board_num: int, page: int, i
             if not is_second_page:
                 if last_page_cache.get(f'{department}_{board_num}') is not None:
                     if last_page_cache.get(f'{department}_{board_num}') < page:
-                        return jsonable_encoder({'last_page': -1, 'posts': []})
+                        return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
                     else:
                         last_page = last_page_cache.get(f'{department}_{board_num}')
                 else:
@@ -87,7 +88,7 @@ async def department_common_parser(department: str, board_num: int, page: int, i
                         last_page = int(last_page)
                         last_page = math.ceil(last_page / 2)
                     except AttributeError:
-                        return jsonable_encoder({'last_page': -1, 'posts': []})
+                        return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
 
             posts = soup.select("table.artclTable > tbody > tr")
             for post in posts:
@@ -113,7 +114,7 @@ async def department_common_parser(department: str, board_num: int, page: int, i
                     }
                     data_list.append(data_dic)
                 except AttributeError:
-                    return jsonable_encoder({'last_page': -1, 'posts': []})
+                    return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
 
             if page % 2 == 1:
                 data_list.extend(await department_common_parser(department, board_num, page + 1, True))
@@ -125,11 +126,11 @@ async def department_common_parser(department: str, board_num: int, page: int, i
                 if last_page_cache.get(f'{department}_{board_num}') is None:
                     last_page_cache[f'{department}_{board_num}'] = last_page
 
-                return jsonable_encoder({'last_page': last_page, 'posts': data_list})
+                return jsonable_encoder({'status_code': response.status_code, 'last_page': last_page, 'posts': data_list})
         else:
             return jsonable_encoder({'status_code': response.status_code})
     else:
-        return jsonable_encoder({'last_page': last_page_cache.get(f'{department}_{board_num}'),
+        return jsonable_encoder({'status_code': 200, 'last_page': last_page_cache.get(f'{department}_{board_num}'),
                                  'posts': board_cache.get(f'{department}_{board_num}_{page}')})
 
 
