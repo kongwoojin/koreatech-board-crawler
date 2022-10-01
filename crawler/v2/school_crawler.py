@@ -45,6 +45,7 @@ async def school_article_parser(url: str):
             file_list.append(file_dic)
 
         data_dic = {
+            'status_code': response.status_code,
             'title': title,
             'writer': writer,
             'text': text,
@@ -69,7 +70,7 @@ async def school_parser(board: str, m_code: str, page: int):
 
             if last_page_cache.get(board) is not None:
                 if last_page_cache.get(board) < page:
-                    return jsonable_encoder({'last_page': -1, 'posts': []})
+                    return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
                 else:
                     last_page = last_page_cache.get(board)
             else:
@@ -86,7 +87,7 @@ async def school_parser(board: str, m_code: str, page: int):
 
                     last_page = int(last_page)
                 except AttributeError:
-                    return jsonable_encoder({'last_page': -1, 'posts': []})
+                    return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
 
             posts = soup.select("#board-wrap > div.board-list-wrap > table > tbody > tr")
             for post in posts:
@@ -100,7 +101,7 @@ async def school_parser(board: str, m_code: str, page: int):
                     read = post.select_one("td.cnt").get_text().strip()
                     article_url = post.select_one("td.subject > a").get('href')
                 except AttributeError:
-                    return jsonable_encoder({'last_page': -1, 'posts': []})
+                    return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
 
                 if board == "list" and m_code == "MN230":
                     data_dic = {
@@ -128,11 +129,11 @@ async def school_parser(board: str, m_code: str, page: int):
             if last_page_cache.get(board) is None:
                 last_page_cache[board] = last_page
 
-            return jsonable_encoder({'last_page': last_page, 'posts': data_list})
+            return jsonable_encoder({'status_code': response.status_code, 'last_page': last_page, 'posts': data_list})
         else:
             return jsonable_encoder({'status_code': response.status_code})
     else:
-        return jsonable_encoder({'last_page': last_page_cache.get(board), 'posts': board_cache.get(f'{board}_{page}')})
+        return jsonable_encoder({'status_code': 200, 'last_page': last_page_cache.get(board), 'posts': board_cache.get(f'{board}_{page}')})
 
 
 async def school_general_notice(page: int = 1):
