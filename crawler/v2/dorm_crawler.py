@@ -5,7 +5,7 @@ import re
 import math
 from expiringdict import ExpiringDict
 
-board_cache = ExpiringDict(max_len=6, max_age_seconds=300)  # Caching board data for 5min
+board_cache = ExpiringDict(max_len=100, max_age_seconds=300)  # Caching board data for 5min
 last_page_cache = ExpiringDict(max_len=2, max_age_seconds=86400)  # Caching last_page data for 1day
 
 
@@ -72,13 +72,19 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
             soup = BeautifulSoup(html, 'html.parser')
 
             if not is_second_page:
-                try:
-                    last_page = soup.select_one("#board > p.listCount").text.strip()
-                    last_page = re.search("(?<=\/)\d*", last_page).group(0)
-                    last_page = int(last_page)
-                    last_page = math.ceil(last_page / 2)
-                except AttributeError:
-                    return jsonable_encoder({'last_page': -1, 'posts': []})
+                if last_page_cache.get(board) is not None:
+                    if last_page_cache.get(board) < page:
+                        return jsonable_encoder({'last_page': -1, 'posts': []})
+                    else:
+                        last_page = last_page_cache.get(board)
+                else:
+                    try:
+                        last_page = soup.select_one("#board > p.listCount").text.strip()
+                        last_page = re.search("(?<=\/)\d*", last_page).group(0)
+                        last_page = int(last_page)
+                        last_page = math.ceil(last_page / 2)
+                    except AttributeError:
+                        return jsonable_encoder({'last_page': -1, 'posts': []})
 
             posts = soup.select("#board > table > tbody > tr")
             for post in posts:
@@ -115,7 +121,9 @@ async def dorm_parser(board: str, page: int, is_second_page: bool = False):
                 return data_list
             else:
                 board_cache[f'{board}_{page}'] = data_list
-                last_page_cache[board] = last_page
+                if last_page_cache.get(board) is None:
+                    last_page_cache[board] = last_page
+
                 return jsonable_encoder({'last_page': last_page, 'posts': data_list})
         else:
             return jsonable_encoder({'status_code': response.status_code})
