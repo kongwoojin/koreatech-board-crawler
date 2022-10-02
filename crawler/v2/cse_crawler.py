@@ -4,7 +4,7 @@ from fastapi.encoders import jsonable_encoder
 import re
 from expiringdict import ExpiringDict
 
-board_cache = ExpiringDict(max_len=12, max_age_seconds=300)  # Caching board data for 5min
+board_cache = ExpiringDict(max_len=100, max_age_seconds=300)  # Caching board data for 5min
 last_page_cache = ExpiringDict(max_len=4, max_age_seconds=86400)  # Caching last_page data for 1day
 
 
@@ -45,6 +45,7 @@ async def cse_article_parser(url: str):
             file_list.append(file_dic)
 
         data_dic = {
+            'status_code': response.status_code,
             'title': title,
             'writer': writer,
             'text': text,
@@ -66,12 +67,18 @@ async def cse_parser(board: str, page: int):
             html = response.text
             soup = BeautifulSoup(html, 'html.parser')
 
-            try:
-                last_page = soup.select_one("div.pagination > a.direction.next").get('href')
-                last_page = re.search("(?<=page=)\d*", last_page).group(0)
-                last_page = int(last_page)
-            except AttributeError:
-                return jsonable_encoder({'last_page': -1, 'posts': []})
+            if last_page_cache.get(board) is not None:
+                if last_page_cache.get(board) < page:
+                    return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
+                else:
+                    last_page = last_page_cache.get(board)
+            else:
+                try:
+                    last_page = soup.select_one("div.pagination > a.direction.next").get('href')
+                    last_page = re.search("(?<=page=)\d*", last_page).group(0)
+                    last_page = int(last_page)
+                except AttributeError:
+                    return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
 
             data_list = []
 
@@ -98,15 +105,17 @@ async def cse_parser(board: str, page: int):
 
                     data_list.append(data_dic)
                 except AttributeError:
-                    return jsonable_encoder({'last_page': -1, 'posts': []})
+                    return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
 
                 board_cache[f'{board}_{page}'] = data_list
-                last_page_cache[board] = last_page
-            return jsonable_encoder({'last_page': last_page, 'posts': data_list})
+                if last_page_cache.get(board) is None:
+                    last_page_cache[board] = last_page
+
+            return jsonable_encoder({'status_code': response.status_code, 'last_page': last_page, 'posts': data_list})
         else:
             return jsonable_encoder({'status_code': response.status_code})
     else:
-        return jsonable_encoder({'last_page': last_page_cache.get(board), 'posts': board_cache.get(f'{board}_{page}')})
+        return jsonable_encoder({'status_code': 200, 'last_page': last_page_cache.get(board), 'posts': board_cache.get(f'{board}_{page}')})
 
 
 async def cse_notice(page: int = 1):

@@ -5,7 +5,7 @@ import re
 import math
 from expiringdict import ExpiringDict
 
-board_cache = ExpiringDict(max_len=45, max_age_seconds=300)  # Caching board data for 5min
+board_cache = ExpiringDict(max_len=100, max_age_seconds=300)  # Caching board data for 5min
 last_page_cache = ExpiringDict(max_len=15, max_age_seconds=86400)  # Caching last_page data for 1day
 
 
@@ -46,6 +46,7 @@ async def department_common_article_parser(url: str):
             file_list.append(file_dic)
 
         data_dic = {
+            'status_code': response.status_code,
             'title': title,
             'writer': writer,
             'text': text,
@@ -75,13 +76,19 @@ async def department_common_parser(department: str, board_num: int, page: int, i
             soup = BeautifulSoup(html, 'html.parser')
 
             if not is_second_page:
-                try:
-                    last_page = soup.select_one("a._last").get('href')
-                    last_page = re.search("(?<=javascript:page_link\(')\d*", last_page).group(0)
-                    last_page = int(last_page)
-                    last_page = math.ceil(last_page / 2)
-                except AttributeError:
-                    return jsonable_encoder({'last_page': -1, 'posts': []})
+                if last_page_cache.get(f'{department}_{board_num}') is not None:
+                    if last_page_cache.get(f'{department}_{board_num}') < page:
+                        return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
+                    else:
+                        last_page = last_page_cache.get(f'{department}_{board_num}')
+                else:
+                    try:
+                        last_page = soup.select_one("a._last").get('href')
+                        last_page = re.search("(?<=javascript:page_link\(')\d*", last_page).group(0)
+                        last_page = int(last_page)
+                        last_page = math.ceil(last_page / 2)
+                    except AttributeError:
+                        return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
 
             posts = soup.select("table.artclTable > tbody > tr")
             for post in posts:
@@ -107,7 +114,7 @@ async def department_common_parser(department: str, board_num: int, page: int, i
                     }
                     data_list.append(data_dic)
                 except AttributeError:
-                    return jsonable_encoder({'last_page': -1, 'posts': []})
+                    return jsonable_encoder({'status_code': response.status_code, 'last_page': -1, 'posts': []})
 
             if page % 2 == 1:
                 data_list.extend(await department_common_parser(department, board_num, page + 1, True))
@@ -116,12 +123,14 @@ async def department_common_parser(department: str, board_num: int, page: int, i
                 return data_list
             else:
                 board_cache[f'{department}_{board_num}_{page}'] = data_list
-                last_page_cache[f'{department}_{board_num}'] = last_page
-                return jsonable_encoder({'last_page': last_page, 'posts': data_list})
+                if last_page_cache.get(f'{department}_{board_num}') is None:
+                    last_page_cache[f'{department}_{board_num}'] = last_page
+
+                return jsonable_encoder({'status_code': response.status_code, 'last_page': last_page, 'posts': data_list})
         else:
             return jsonable_encoder({'status_code': response.status_code})
     else:
-        return jsonable_encoder({'last_page': last_page_cache.get(f'{department}_{board_num}'),
+        return jsonable_encoder({'status_code': 200, 'last_page': last_page_cache.get(f'{department}_{board_num}'),
                                  'posts': board_cache.get(f'{department}_{board_num}_{page}')})
 
 
