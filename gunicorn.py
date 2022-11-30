@@ -1,11 +1,14 @@
+import os
+import multiprocessing
+
 # Socket Path
-bind = 'unix:/home/kongjak/CSE_crawler_API/gunicorn.sock'
+bind = '0.0.0.0:8000'
 
 # Worker Options
-workers = 2
+workers = multiprocessing.cpu_count()
 worker_class = 'uvicorn.workers.UvicornWorker'
 
 # Logging Options
 loglevel = 'debug'
-accesslog = '/home/kongjak/CSE_crawler_API/access_log'
-errorlog = '/home/kongjak/CSE_crawler_API/error_log'
+accesslog = f'{os.getcwd()}/access_log'
+errorlog = f'{os.getcwd()}/error_log'
