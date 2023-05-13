@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
-from crawler.v1.cse_crawler import *
-from crawler.v1.school_crawler import *
-from crawler.v1.dorm_crawler import *
-from crawler.v1.department_common_crawler import *
+from api.crawler.v1.cse_crawler import *
+from api.crawler.v1.school_crawler import *
+from api.crawler.v1.dorm_crawler import *
+from api.crawler.v1.department_common_crawler import *
 
 router = APIRouter(
     tags=["legacy"],

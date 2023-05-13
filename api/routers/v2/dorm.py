@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from crawler.v2.dorm_crawler import *
+from api.crawler.v2.dorm_crawler import *
 
 router = APIRouter(
     prefix="/v2/dorm",

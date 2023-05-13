@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from routers.v1 import api
-from routers.v2 import mechanical, arch, school, dorm, mechatronics, sim, cse, ite, ide, emc
+from api.routers.v1 import api
+from api.routers.v2 import cse, sim, dorm, school, mechatronics, emc, ide, arch, mechanical, ite
 
 app = FastAPI()
 
