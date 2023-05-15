@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from api.crawler.v2.cse_crawler import *
+from app.crawler.v2.cse_crawler import *
 
 router = APIRouter(
     prefix="/v2/cse",
