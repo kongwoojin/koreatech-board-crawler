@@ -51,7 +51,8 @@ def main_mechatronics_crawler():
 
 
 def main_school_crawler():
-    for board, m_code in [("list", "MN230"), "scholarList", "MN231", "bachelorList", "MN233", "boardList8", "MN427"]:
+    for board, m_code in [("list", "MN230"), ("scholarList", "MN231"), ("bachelorList", "MN233"),
+                          ("boardList8", "MN427")]:
         for page in range(1, 3):
             school_crawler.school_parser(board, m_code, page)
 
