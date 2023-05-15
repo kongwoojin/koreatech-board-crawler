@@ -7,7 +7,7 @@ from datetime import datetime
 import edgedb
 
 
-async def arch_parser(board_num: int, page: int):
+async def ite_parser(board_num: int, page: int):
     client = edgedb.create_client()
     now = datetime.now()
 

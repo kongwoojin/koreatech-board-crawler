@@ -7,7 +7,7 @@ from datetime import datetime
 import edgedb
 
 
-def arch_parser(board_num: int, page: int):
+def emc_parser(board_num: int, page: int):
     client = edgedb.create_client()
     now = datetime.now()
 
