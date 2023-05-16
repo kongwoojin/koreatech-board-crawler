@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
-from crawler.v2.department_common_crawler import *
+from app.db.v3.arch import *
 
 router = APIRouter(
-    prefix="/v2/arch",
+    prefix="/v3/arch",
     tags=["arch"],
     responses={404: {"description": "Not found"}},
 )
@@ -19,5 +19,5 @@ async def get_arch_free_board(params: dict = Depends(arch_free_board)):
 
 
 @router.get("/article/")
-async def get_arch_article(params: dict = Depends(department_common_article_parser)):
+async def get_arch_article(params: dict = Depends(get_article)):
     return params

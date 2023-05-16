@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
-from crawler.v2.dorm_crawler import *
+from app.db.v3.dorm import *
 
 router = APIRouter(
-    prefix="/v2/dorm",
+    prefix="/v3/dorm",
     tags=["dorm"],
     responses={404: {"description": "Not found"}},
 )
@@ -19,5 +19,5 @@ async def get_dorm_free_board(params: dict = Depends(dorm_free_board)):
 
 
 @router.get("/article/")
-async def get_dorm_article(params: dict = Depends(dorm_article_parser)):
+async def get_dorm_article(params: dict = Depends(get_article)):
     return params

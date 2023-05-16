@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
-from crawler.v2.cse_crawler import *
+from app.db.v3.cse import *
 
 router = APIRouter(
-    prefix="/v2/cse",
+    prefix="/v3/cse",
     tags=["cse"],
     responses={404: {"description": "Not found"}},
 )
@@ -29,5 +29,5 @@ async def get_cse_pds(params: dict = Depends(cse_pds)):
 
 
 @router.get("/article/")
-async def get_cse_article(params: dict = Depends(cse_article_parser)):
+async def get_cse_article(params: dict = Depends(get_article)):
     return params
