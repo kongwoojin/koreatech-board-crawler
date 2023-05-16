@@ -26,9 +26,9 @@ def sim_parser(board_num: int, page: int):
                 writer_parsed = post.select_one("td._artclTdWriter").get_text().strip()
                 write_date_parsed = post.select_one("td._artclTdRdate").get_text().strip()
                 write_date_parsed = datetime.strptime(write_date_parsed, '%Y.%m.%d')
-                read_count_parsed = int(post.select_one("td._artclTdAccess").get_text().strip())
                 article_url_parsed = post.select_one("td._artclTdTitle > a").get('href')
                 article_url_parsed = f"https://cms3.koreatech.ac.kr{article_url_parsed}"
+                read_count_parsed = int(post.select_one("td._artclTdAccess").get_text().strip())
 
                 article_response = requests.get(article_url_parsed, verify=False)
 
@@ -96,6 +96,8 @@ def sim_parser(board_num: int, page: int):
                                      article_url=article_url_parsed, files=json.dumps(file_list))
 
             except AttributeError:
+                # If attribute error faced, It means the article is blinded.
+                # So, Just get next one.
                 continue
 
     else:
