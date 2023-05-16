@@ -2,64 +2,64 @@ from app.crawler.v3 import arch_crawler, cse_crawler, dorm_crawler, emc_crawler,
     mechanical_crawler, mechatronics_crawler, school_crawler, sim_crawler
 
 
-def main_arch_crawler():
+def main_arch_crawler(last_page: int = 3):
     for board in [340, 341]:
-        for page in range(1, 3):
+        for page in range(1, last_page):
             arch_crawler.arch_parser(board, page)
 
 
-def main_cse_crawler():
+def main_cse_crawler(last_page: int = 3):
     for board in ["notice", "jobboard", "freeboard", "pds"]:
-        for page in range(1, 3):
+        for page in range(1, last_page):
             cse_crawler.cse_parser(board, page)
 
 
-def main_dorm_crawler():
+def main_dorm_crawler(last_page: int = 3):
     for board in ["notice", "bulletin"]:
-        for page in range(1, 3):
+        for page in range(1, last_page):
             dorm_crawler.dorm_parser(board, page)
 
 
-def main_emc_crawler():
+def main_emc_crawler(last_page: int = 3):
     for board in [541]:
-        for page in range(1, 3):
+        for page in range(1, last_page):
             emc_crawler.emc_parser(board, page)
 
 
-def main_ide_crawler():
+def main_ide_crawler(last_page: int = 3):
     for board in [330, 332]:
-        for page in range(1, 3):
+        for page in range(1, last_page):
             ide_crawler.ide_parser(board, page)
 
 
-def main_ite_crawler():
+def main_ite_crawler(last_page: int = 3):
     for board in [247]:
-        for page in range(1, 3):
+        for page in range(1, last_page):
             ite_crawler.ite_parser(board, page)
 
 
-def main_mechanical_crawler():
+def main_mechanical_crawler(last_page: int = 3):
     for board in [229, 230, 232]:
-        for page in range(1, 3):
+        for page in range(1, last_page):
             mechanical_crawler.mechanical_parser(board, page)
 
 
-def main_mechatronics_crawler():
+def main_mechatronics_crawler(last_page: int = 3):
     for board in [235, 236, 237, 238, 244]:
-        for page in range(1, 3):
+        for page in range(1, last_page):
             mechatronics_crawler.mechatronics_parser(board, page)
 
 
-def main_school_crawler():
+def main_school_crawler(last_page: int = 3):
     for board, m_code in [("list", "MN230"), ("scholarList", "MN231"), ("bachelorList", "MN233"),
                           ("boardList8", "MN427")]:
-        for page in range(1, 3):
+        for page in range(1, last_page):
             school_crawler.school_parser(board, m_code, page)
 
 
-def main_sim_crawler():
+def main_sim_crawler(last_page: int = 3):
     for board in [373]:
-        for page in range(1, 3):
+        for page in range(1, last_page):
             sim_crawler.sim_parser(board, page)
 
 
