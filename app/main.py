@@ -1,34 +1,25 @@
-from fastapi import FastAPI
+import asyncio
 
-from apscheduler.schedulers.background import BackgroundScheduler
+import uvicorn
 
-from app.routers.v1 import api
-# from app.routers.v2 import cse, sim, dorm, school, mechatronics, emc, ide, arch, mechanical, ite
-from app.routers.v3 import cse, sim, dorm, school, mechatronics, emc, ide, arch, mechanical, ite
-
-from app.crawler.v3.main import main_crawler_one, main_crawler_two
-
-app = FastAPI()
-
-app.include_router(cse.router)
-app.include_router(arch.router)
-app.include_router(dorm.router)
-app.include_router(emc.router)
-app.include_router(ide.router)
-app.include_router(ite.router)
-app.include_router(mechanical.router)
-app.include_router(mechatronics.router)
-app.include_router(school.router)
-app.include_router(sim.router)
-
-app.include_router(api.router)
+from api import app as app_fastapi
+from scheduler import app as app_rocketry
 
 
-@app.on_event('startup')
-def start_crawler():
-    sched = BackgroundScheduler()
-    sched.add_job(main_crawler_one, 'cron', hour="*", minute=0)
-    sched.add_job(main_crawler_two, 'cron', hour="*", minute=30)
-    sched.start()
+class Server(uvicorn.Server):
+    def handle_exit(self, sig: int, frame) -> None:
+        app_rocketry.session.shut_down()
+        return super().handle_exit(sig, frame)
 
-    print("Crawling started..")
+
+async def main():
+    server = Server(config=uvicorn.Config(app_fastapi, host="0.0.0.0", workers=4, loop="asyncio"))
+
+    api = asyncio.create_task(server.serve())
+    sched = asyncio.create_task(app_rocketry.serve())
+
+    await asyncio.wait([sched, api])
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

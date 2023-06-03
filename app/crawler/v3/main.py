@@ -63,14 +63,11 @@ def main_sim_crawler(last_page: int = 3):
             sim_crawler.sim_parser(board, page)
 
 
-def main_crawler_one():
+def main_crawler():
     main_cse_crawler()  # 4
     main_school_crawler()  # 4
     main_dorm_crawler()  # 2
     main_arch_crawler()  # 2
-
-
-def main_crawler_two():
     main_mechatronics_crawler()  # 5
     main_mechanical_crawler()  # 3
     main_ide_crawler()  # 2
