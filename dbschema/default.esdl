@@ -10,7 +10,9 @@ module default {
             constraint exclusive;
         };
         required property content -> str;
-        required property files -> array<tuple<name: str, url: str>>;
+        multi link files -> Files {
+            on target delete allow;
+        };
         required property crawled_time -> cal::local_datetime;
     }
 
@@ -25,7 +27,9 @@ module default {
             constraint exclusive;
         };
         required property content -> str;
-        required property files -> array<tuple<name: str, url: str>>;
+        multi link files -> Files {
+            on target delete allow;
+        };
         required property crawled_time -> cal::local_datetime;
     }
 
@@ -40,7 +44,9 @@ module default {
             constraint exclusive;
         };
         required property content -> str;
-        required property files -> array<tuple<name: str, url: str>>;
+        multi link files -> Files {
+            on target delete allow;
+        };
         required property crawled_time -> cal::local_datetime;
     }
 
@@ -55,7 +61,9 @@ module default {
             constraint exclusive;
         };
         required property content -> str;
-        required property files -> array<tuple<name: str, url: str>>;
+        multi link files -> Files {
+            on target delete allow;
+        };
         required property crawled_time -> cal::local_datetime;
     }
     type ide {
@@ -69,7 +77,9 @@ module default {
             constraint exclusive;
         };
         required property content -> str;
-        required property files -> array<tuple<name: str, url: str>>;
+        multi link files -> Files {
+            on target delete allow;
+        };
         required property crawled_time -> cal::local_datetime;
     }
 
@@ -84,7 +94,9 @@ module default {
             constraint exclusive;
         };
         required property content -> str;
-        required property files -> array<tuple<name: str, url: str>>;
+        multi link files -> Files {
+            on target delete allow;
+        };
         required property crawled_time -> cal::local_datetime;
     }
 
@@ -99,7 +111,9 @@ module default {
             constraint exclusive;
         };
         required property content -> str;
-        required property files -> array<tuple<name: str, url: str>>;
+        multi link files -> Files {
+            on target delete allow;
+        };
         required property crawled_time -> cal::local_datetime;
     }
 
@@ -114,7 +128,9 @@ module default {
             constraint exclusive;
         };
         required property content -> str;
-        required property files -> array<tuple<name: str, url: str>>;
+        multi link files -> Files {
+            on target delete allow;
+        };
         required property crawled_time -> cal::local_datetime;
     }
 
@@ -129,7 +145,9 @@ module default {
             constraint exclusive;
         };
         required property content -> str;
-        required property files -> array<tuple<name: str, url: str>>;
+        multi link files -> Files {
+            on target delete allow;
+        };
         required property crawled_time -> cal::local_datetime;
     }
 
@@ -144,8 +162,16 @@ module default {
             constraint exclusive;
         };
         required property content -> str;
-        required property files -> array<tuple<name: str, url: str>>;
+        multi link files -> Files {
+            on target delete allow;
+        };
         required property crawled_time -> cal::local_datetime;
     }
 
+    type Files {
+        required property file_name -> str;
+        required property file_uri -> str {
+            constraint exclusive;
+        };
+    }
 }

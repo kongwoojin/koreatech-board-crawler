@@ -56,8 +56,12 @@ def emc_parser(board_num: int, page: int):
                         except AttributeError:
                             continue
 
-                        file_tuple = (file_name, file_uri)
-                        file_list.append(file_tuple)
+                        file_dic = {
+                            "file_uri": file_uri,
+                            "file_name": file_name
+                        }
+
+                        file_list.append(file_dic)
 
                     board = str(board_num)
 
@@ -73,12 +77,20 @@ def emc_parser(board_num: int, page: int):
                                 article_url := <str>$article_url,
                                 content := <str>$content,
                                 crawled_time := <cal::local_datetime>$crawled_time,
-                                files := <array<tuple<str, str>>><json>$files
+                                files := (with
+                                          raw_data := <json>$file_data,
+                                          for item in json_array_unpack(raw_data) union (
+                                            insert Files {
+                                              file_name := <str>item['file_name'],
+                                              file_uri := <str>item['file_uri']            
+                                            }
+                                          )
+                                          )
                             }
                         """, board=board, num=num_parsed, title=title_parsed, writer=writer_parsed,
                                      write_date=write_date_parsed, read_count=read_count_parsed,
                                      article_url=article_url_parsed, content=text_parsed, crawled_time=now,
-                                     files=json.dumps(file_list))
+                                     file_data=json.dumps(file_list))
 
                     except edgedb.errors.ConstraintViolationError:
                         client.query("""
@@ -90,11 +102,25 @@ def emc_parser(board_num: int, page: int):
                                 read_count := <int64>$read_count,
                                 content := <str>$content,
                                 crawled_time := <cal::local_datetime>$crawled_time,
-                                files := <array<tuple<str, str>>><json>$files
+                                files := (with
+                                          raw_data := <json>$file_data,
+                                          for item in json_array_unpack(raw_data) union (
+                                            insert Files {
+                                                file_name := <str>item['file_name'],
+                                                file_uri := <str>item['file_uri']            
+                                            } unless conflict on .file_uri else (
+                                            update Files
+                                            set {
+                                                file_name := <str>item['file_name'],
+                                                file_uri := <str>item['file_uri']            
+                                            }
+                                            )
+                                          )
+                                          )
                             }
                         """, title=title_parsed, write_date=write_date_parsed, read_count=read_count_parsed,
                                      content=text_parsed, crawled_time=now,
-                                     article_url=article_url_parsed, files=json.dumps(file_list))
+                                     article_url=article_url_parsed, file_data=json.dumps(file_list))
 
             except AttributeError:
                 continue
