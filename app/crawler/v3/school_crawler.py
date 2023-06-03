@@ -29,6 +29,15 @@ def school_parser(board: str, m_code: str, page: int):
                 article_url_parsed = post.select_one("td.subject > a").get('href')
                 article_url_parsed = f"https://koreatech.ac.kr{article_url_parsed}"
 
+                try:
+                    importance_img = post.select_one("td.subject > img")
+                    if importance_img.get("src") == "/resources/_Img/Board/default/ico_notice.gif":
+                        is_importance = True
+                    else:
+                        is_importance = False
+                except AttributeError:
+                    is_importance = False
+
                 article_response = requests.get(article_url_parsed, verify=False)
 
                 if article_response.status_code == 200:
@@ -64,6 +73,7 @@ def school_parser(board: str, m_code: str, page: int):
                             insert school {
                                 board := <str>$board,
                                 num := <str>$num,
+                                is_importance := <bool>$is_importance,
                                 title := <str>$title,
                                 writer := <str>$writer,
                                 write_date := <cal::local_date>$write_date,
@@ -84,13 +94,15 @@ def school_parser(board: str, m_code: str, page: int):
                         """, board=board, num=num_parsed, title=title_parsed, writer=writer_parsed,
                                      write_date=write_date_parsed, read_count=read_count_parsed,
                                      article_url=article_url_parsed, content=text_parsed, crawled_time=now,
-                                     file_data=json.dumps(file_list))
+                                     file_data=json.dumps(file_list), is_importance=is_importance)
+
                     except edgedb.errors.ConstraintViolationError:
                         client.query("""
                             update school
                             filter .article_url = <str>$article_url
                             set {
                                 title := <str>$title,
+                                is_importance := <bool>$is_importance,
                                 write_date := <cal::local_date>$write_date,
                                 read_count := <int64>$read_count,
                                 content := <str>$content,
@@ -113,7 +125,8 @@ def school_parser(board: str, m_code: str, page: int):
                             }
                         """, title=title_parsed, write_date=write_date_parsed, read_count=read_count_parsed,
                                      content=text_parsed, crawled_time=now,
-                                     article_url=article_url_parsed, file_data=json.dumps(file_list))
+                                     article_url=article_url_parsed, file_data=json.dumps(file_list),
+                                     is_importance=is_importance)
 
                 else:
                     continue
