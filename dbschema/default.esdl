@@ -137,6 +137,7 @@ module default {
     type school {
         required property board -> str;
         required property num -> str;
+        required property is_importance -> bool;
         required property title -> str;
         required property writer -> str;
         required property write_date -> cal::local_date;
