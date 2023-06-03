@@ -1,4 +1,5 @@
 import asyncio
+from multiprocessing import cpu_count
 
 import uvicorn
 
@@ -13,7 +14,7 @@ class Server(uvicorn.Server):
 
 
 async def main():
-    server = Server(config=uvicorn.Config(app_fastapi, host="0.0.0.0", workers=4, loop="asyncio"))
+    server = Server(config=uvicorn.Config(app_fastapi, host="0.0.0.0", workers=cpu_count(), loop="asyncio"))
 
     api = asyncio.create_task(server.serve())
     sched = asyncio.create_task(app_rocketry.serve())
