@@ -11,6 +11,7 @@ def mechanical_parser(board_num: int, page: int):
     client = edgedb.create_client()
     now = datetime.now()
 
+    requests.packages.urllib3.disable_warnings()
     url = f"https://cms3.koreatech.ac.kr/bbs/me/{board_num}/artclList.do?page={page}"
 
     response = requests.get(url, verify=False)

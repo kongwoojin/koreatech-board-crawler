@@ -11,6 +11,7 @@ def school_parser(board: str, m_code: str, page: int):
     client = edgedb.create_client()
     now = datetime.now()
 
+    requests.packages.urllib3.disable_warnings()
     url = f"https://www.koreatech.ac.kr/kor/CMS/NoticeMgr/{board}.do?mCode={m_code}&page={page}"
     response = requests.get(url, verify=False)
 

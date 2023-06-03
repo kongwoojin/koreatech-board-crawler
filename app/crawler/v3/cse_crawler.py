@@ -11,6 +11,7 @@ def cse_parser(board: str, page: int):
     client = edgedb.create_client()
     now = datetime.now()
 
+    requests.packages.urllib3.disable_warnings()
     url = f"https://cse.koreatech.ac.kr/index.php?mid={board}&page={page}"
     response = requests.get(url, verify=False)
 

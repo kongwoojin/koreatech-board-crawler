@@ -11,6 +11,7 @@ def dorm_parser(board: str, page: int):
     client = edgedb.create_client()
     now = datetime.now()
 
+    requests.packages.urllib3.disable_warnings()
     url = f"https://dorm.koreatech.ac.kr/content/board/list.php?now_page={page}&GUBN=&SEARCH=&BOARDID={board}"
     response = requests.get(url, verify=False)
 

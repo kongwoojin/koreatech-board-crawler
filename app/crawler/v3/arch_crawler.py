@@ -6,13 +6,13 @@ import re
 from datetime import datetime
 import edgedb
 
-
 def arch_parser(board_num: int, page: int):
     client = edgedb.create_client()
     now = datetime.now()
 
     url = f"https://cms3.koreatech.ac.kr/bbs/arch/{board_num}/artclList.do?page={page}"
 
+    requests.packages.urllib3.disable_warnings()
     response = requests.get(url, verify=False)
 
     if response.status_code == 200:
