@@ -8,7 +8,7 @@ client = edgedb.create_async_client()
 async def get_data(board: str, page: int, num_of_items: int):
     data = await client.query("""
             select mechanical 
-            {num, title, writer, write_date, article_url} 
+            {num, title, writer, write_date} 
             filter .board=<str>$board order by contains(.num, '공지') desc 
             then .write_date desc
             then .num desc offset <int64>$offset limit <int64>$num_of_items
