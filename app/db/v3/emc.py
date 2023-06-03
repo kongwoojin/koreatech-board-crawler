@@ -20,13 +20,18 @@ async def get_data(board: str, page: int, num_of_items: int):
 
 
 async def get_article(uuid: str):
-    data = await client.query("""
-            select emc 
-            {title, writer, write_date, article_url, content, files: {file_name, file_uri}}
-            filter .id=<uuid>$uuid
-            """, uuid=uuid)
+    try:
+        data = await client.query("""
+                select emc 
+                {title, writer, write_date, article_url, content, files: {file_name, file_uri}}
+                filter .id=<uuid>$uuid
+                """, uuid=uuid)
 
-    return data
+        return data
+    except edgedb.errors.InvalidArgumentError:
+        return jsonable_encoder({"error": "Wrong argument received!"})
+    except Exception:
+        return jsonable_encoder({"error": "Unknown error!"})
 
 
 async def emc_notice(page: int = 1, num_of_items: int = 20):
