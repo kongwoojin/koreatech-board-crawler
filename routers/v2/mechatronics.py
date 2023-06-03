@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
-from app.db.v3.mechatronics import *
+from crawler.v2.department_common_crawler import *
 
 router = APIRouter(
-    prefix="/v3/mechatronics",
+    prefix="/v2/mechatronics",
     tags=["mechatronics"],
     responses={404: {"description": "Not found"}},
 )
@@ -34,5 +34,5 @@ async def get_mechanical_free_board(params: dict = Depends(mechatronics_free_boa
 
 
 @router.get("/article/")
-async def get_mechanical_article(params: dict = Depends(get_article)):
+async def get_mechanical_article(params: dict = Depends(department_common_article_parser)):
     return params

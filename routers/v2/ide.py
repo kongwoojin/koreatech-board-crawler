@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
-from app.db.v3.ide import *
+from crawler.v2.department_common_crawler import *
 
 router = APIRouter(
-    prefix="/v3/ide",
+    prefix="/v2/ide",
     tags=["ide"],
     responses={404: {"description": "Not found"}},
 )
@@ -19,5 +19,5 @@ async def get_ide_free_board(params: dict = Depends(ide_free_board)):
 
 
 @router.get("/article/")
-async def get_ide_article(params: dict = Depends(get_article)):
+async def get_ide_article(params: dict = Depends(department_common_article_parser)):
     return params

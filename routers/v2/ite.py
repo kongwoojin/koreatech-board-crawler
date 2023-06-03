@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
-from app.db.v3.ite import *
+from crawler.v2.department_common_crawler import *
 
 router = APIRouter(
-    prefix="/v3/ite",
+    prefix="/v2/ite",
     tags=["ite"],
     responses={404: {"description": "Not found"}},
 )
@@ -14,5 +14,5 @@ async def get_ite_notice(params: dict = Depends(ite_notice)):
 
 
 @router.get("/article/")
-async def get_ite_article(params: dict = Depends(get_article)):
+async def get_ite_article(params: dict = Depends(department_common_article_parser)):
     return params

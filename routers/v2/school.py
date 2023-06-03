@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
-from app.db.v3.school import *
+from crawler.v2.school_crawler import *
 
 router = APIRouter(
-    prefix="/v3/school",
+    prefix="/v2/school",
     tags=["school"],
     responses={404: {"description": "Not found"}},
 )
@@ -29,5 +29,5 @@ async def get_school_covid19_notice(params: dict = Depends(school_covid19_notice
 
 
 @router.get("/article/")
-async def get_school_article(params: dict = Depends(get_article)):
+async def get_school_article(params: dict = Depends(school_article_parser)):
     return params
