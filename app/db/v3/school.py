@@ -10,7 +10,7 @@ async def get_data(board: str, page: int, num_of_items: int):
         data = await client.query("""
                 select school 
                 {num, title, writer, write_date, read_count} 
-                filter .board=<str>$board order by contains(.num, '공지') desc 
+                filter .board=<str>$board order by .is_importance desc 
                 then .write_date desc
                 then .num desc offset <int64>$offset limit <int64>$num_of_items
                 """, board=board, offset=(page - 1) * num_of_items, num_of_items=num_of_items)
