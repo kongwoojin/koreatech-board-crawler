@@ -130,6 +130,3 @@ def arch_parser(board_num: int, page: int):
         pass
 
     client.close()
-
-
-arch_parser(340, 9)
