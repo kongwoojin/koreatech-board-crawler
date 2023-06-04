@@ -26,7 +26,7 @@ async def get_article(uuid: str):
     try:
         data = await client.query("""
                 select mechatronics 
-                {title, writer, write_date, article_url, content, files: {file_name, file_uri}}
+                {title, writer, write_date, article_url, content, files: {file_name, file_url}}
                 filter .id=<uuid>$uuid
                 """, uuid=uuid)
 

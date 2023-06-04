@@ -171,7 +171,7 @@ module default {
 
     type Files {
         required property file_name -> str;
-        required property file_uri -> str {
+        required property file_url -> str {
             constraint exclusive;
         };
     }
