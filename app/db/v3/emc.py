@@ -27,7 +27,7 @@ async def get_article(uuid: str):
                 filter .id=<uuid>$uuid
                 """, uuid=uuid)
 
-        return data
+        return data[0]
     except edgedb.errors.InvalidArgumentError:
         return jsonable_encoder({"error": "Wrong argument received!"})
     except Exception:
