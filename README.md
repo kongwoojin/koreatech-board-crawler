@@ -1,5 +1,18 @@
 ## Koreatech notice board crawler API
-비공식 한국기술교육대학교 공지사항, 게시판 클라이언트 API
+비공식 한국기술교육대학교 공지사항, 게시판 클라이언트 REST API
+
+## 사용된 기술 스택
+* [Python](https://www.python.org/)
+* [FastAPI](https://github.com/tiangolo/fastapi)
+* [EdgeDB](https://www.edgedb.com/)
+
+## 사용된  라이브러리
+* [Rocketry](https://github.com/Miksus/rocketry)
+* [aiohttp](https://github.com/aio-libs/aiohttp)
+* [Uvicorn](https://www.uvicorn.org/)
+* [requests](https://github.com/psf/requests)
+* [expiringdict](https://pypi.org/project/expiringdict/)
+* [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/)
 
 ## 지원하는 게시판
 * [한국기술교육대학교](https://koreatech.ac.kr/)
@@ -12,5 +25,5 @@
 * [한국기술교육대학교 에너지신소재 화학공학부](https://cms3.koreatech.ac.kr/emc/index.do)
 * [한국기술교육대학교 산업경영학부](https://cms3.koreatech.ac.kr/sim/index.do)
 
-## Client
-[Android](https://github.com/kongwoojin/koreatech_board_client_android)
+## 클라이언트
+* [Android](https://github.com/kongwoojin/koreatech_board_client_android)
