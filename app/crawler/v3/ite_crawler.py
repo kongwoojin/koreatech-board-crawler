@@ -11,7 +11,7 @@ async def ite_parser(board_num: int, page: int):
     client = edgedb.create_client()
     now = datetime.now()
 
-    url = f"https://cms3.koreatech.ac.kr/bbs/arch/{board_num}/artclList.do?page={page}"
+    url = f"https://cms3.koreatech.ac.kr/bbs/ite/{board_num}/artclList.do?page={page}"
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
