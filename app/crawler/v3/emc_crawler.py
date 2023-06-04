@@ -31,7 +31,7 @@ async def emc_parser(board_num: int, page: int):
                         article_url_parsed = f"https://cms3.koreatech.ac.kr{article_url_parsed}"
                         read_count_parsed = int(post.select_one("td._artclTdAccess").get_text().strip())
 
-                        async with session.get(url) as article_resp:
+                        async with session.get(article_url_parsed) as article_resp:
 
                             if article_resp.status == 200:
                                 html = await article_resp.text()

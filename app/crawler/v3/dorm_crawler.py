@@ -38,7 +38,7 @@ async def dorm_parser(board: str, page: int):
                     except AttributeError:
                         continue
 
-                    async with session.get(url) as article_resp:
+                    async with session.get(article_url_parsed) as article_resp:
                         if article_resp.status == 200:
                             html = article_resp.text
                             soup = BeautifulSoup(html, 'html.parser')
