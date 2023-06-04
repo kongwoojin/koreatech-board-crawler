@@ -26,7 +26,7 @@ async def get_article(uuid: str):
             filter .id=<uuid>$uuid
             """, uuid=uuid)
 
-    return data
+    return data[0]
 
 
 async def sim_notice(page: int = 1, num_of_items: int = 20):
