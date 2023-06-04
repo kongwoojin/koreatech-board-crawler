@@ -39,7 +39,7 @@ async def school_parser(board: str, m_code: str, page: int):
                         except AttributeError:
                             is_importance = False
 
-                        async with session.get(url) as article_resp:
+                        async with session.get(article_url_parsed) as article_resp:
                             if article_resp.status == 200:
                                 html = await article_resp.text()
                                 soup = BeautifulSoup(html, 'html.parser')
