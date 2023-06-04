@@ -2,6 +2,10 @@ import asyncio
 from multiprocessing import cpu_count
 
 import uvicorn
+import sys
+from os import path
+
+sys.path.append(path.abspath('.'))
 
 from api import app as app_fastapi
 #from scheduler import app as app_rocketry
