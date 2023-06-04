@@ -22,7 +22,7 @@ async def get_data(board: str, page: int, num_of_items: int):
 async def get_article(uuid: str):
     data = await client.query("""
             select sim 
-            {title, writer, write_date, article_url, content, files: {file_name, file_uri}}
+            {title, writer, write_date, article_url, content, files: {file_name, file_url}}
             filter .id=<uuid>$uuid
             """, uuid=uuid)
 

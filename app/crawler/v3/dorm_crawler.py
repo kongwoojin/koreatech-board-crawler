@@ -56,12 +56,12 @@ async def dorm_parser(board: str, page: int):
 
                             file_list = []
                             for file in files:
-                                file_uri = file["href"]
+                                file_url = file["href"]
                                 file_name = file.get_text()
                                 file_name = re.sub("\[.*]", "", file_name).strip()
 
                                 file_dic = {
-                                    "file_uri": file_uri,
+                                    "file_url": f'https://dorm.koreatech.ac.kr{file_url}',
                                     "file_name": file_name
                                 }
 
@@ -84,7 +84,7 @@ async def dorm_parser(board: str, page: int):
                                                       for item in json_array_unpack(raw_data) union (
                                                         insert Files {
                                                           file_name := <str>item['file_name'],
-                                                          file_uri := <str>item['file_uri']            
+                                                          file_url := <str>item['file_url']            
                                                         }
                                                       )
                                                       )
@@ -108,12 +108,12 @@ async def dorm_parser(board: str, page: int):
                                                   for item in json_array_unpack(raw_data) union (
                                                     insert Files {
                                                         file_name := <str>item['file_name'],
-                                                        file_uri := <str>item['file_uri']            
-                                                    } unless conflict on .file_uri else (
+                                                        file_url := <str>item['file_url']            
+                                                    } unless conflict on .file_url else (
                                                     update Files
                                                     set {
                                                         file_name := <str>item['file_name'],
-                                                        file_uri := <str>item['file_uri']            
+                                                        file_url := <str>item['file_url']            
                                                     }
                                                     )
                                                   )
