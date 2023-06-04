@@ -62,7 +62,7 @@ async def school_parser(board: str, m_code: str, page: int):
                                     file_name = re.sub("\[.*]", "", file_name).strip()
 
                                     file_dic = {
-                                        "file_url": file_url,
+                                        "file_url": f'https://cms3.koreatech.ac.kr{file_url}',
                                         "file_name": file_name
                                     }
 

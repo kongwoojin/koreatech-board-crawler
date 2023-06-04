@@ -58,7 +58,7 @@ async def emc_parser(board_num: int, page: int):
                                         continue
 
                                     file_dic = {
-                                        "file_url": file_url,
+                                        "file_url": f'https://cms3.koreatech.ac.kr{file_url}',
                                         "file_name": file_name
                                     }
 

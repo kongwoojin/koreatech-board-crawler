@@ -61,7 +61,7 @@ async def dorm_parser(board: str, page: int):
                                 file_name = re.sub("\[.*]", "", file_name).strip()
 
                                 file_dic = {
-                                    "file_url": file_url,
+                                    "file_url": f'https://dorm.koreatech.ac.kr{file_url}',
                                     "file_name": file_name
                                 }
 
