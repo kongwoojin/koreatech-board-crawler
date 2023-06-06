@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 import aiohttp
@@ -15,7 +16,6 @@ async def ite_parser(board_num: int, page: int):
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
-
             if resp.status == 200:
                 html = await resp.text()
                 soup = BeautifulSoup(html, 'html.parser')
@@ -26,9 +26,10 @@ async def ite_parser(board_num: int, page: int):
                         num_parsed = post.select_one("td._artclTdNum").get_text().strip()
                         writer_parsed = post.select_one("td._artclTdWriter").get_text().strip()
                         write_date_parsed = post.select_one("td._artclTdRdate").get_text().strip()
+                        write_date_parsed = datetime.strptime(write_date_parsed, '%Y.%m.%d')
                         article_url_parsed = post.select_one("td._artclTdTitle > a").get('href')
                         article_url_parsed = f"https://cms3.koreatech.ac.kr{article_url_parsed}"
-                        read_count_parsed = post.select_one("td._artclTdAccess").get_text().strip()
+                        read_count_parsed = int(post.select_one("td._artclTdAccess").get_text().strip())
 
                         async with session.get(article_url_parsed) as article_resp:
                             if article_resp.status == 200:
@@ -62,62 +63,33 @@ async def ite_parser(board_num: int, page: int):
 
                                     file_list.append(file_dic)
 
-                                    try:
-                                        client.query("""
-                                            insert ite {
-                                                board := <str>$board,
-                                                num := <str>$num,
-                                                title := <str>$title,
-                                                writer := <str>$writer,
-                                                write_date := <cal::local_date>$write_date,
-                                                read_count := <int64>$read_count,
-                                                article_url := <str>$article_url,
-                                                content := <str>$content,
-                                                crawled_time := <cal::local_datetime>$crawled_time,
-                                                files := (with
-                                                          raw_data := <json>$file_data,
-                                                          for item in json_array_unpack(raw_data) union (
-                                                            insert Files {
-                                                              file_name := <str>item['file_name'],
-                                                              file_url := <str>item['file_url']            
-                                                            }
-                                                          )
-                                                          )
-                                            }
-                                        """, board=str(board_num), num=num_parsed, title=title_parsed, writer=writer_parsed,
-                                                     write_date=write_date_parsed, read_count=read_count_parsed,
-                                                     article_url=article_url_parsed, content=text_parsed, crawled_time=now,
-                                                     file_data=json.dumps(file_list))
+                                board = str(board_num)
 
-                                    except edgedb.errors.ConstraintViolationError:
-                                        client.query("""
-                                                update mechanical
-                                                filter .article_url = <str>$article_url
-                                                set {
-                                                    title := <str>$title,
-                                                    write_date := <cal::local_date>$write_date,
-                                                    read_count := <int64>$read_count,
-                                                    content := <str>$content,
-                                                    crawled_time := <cal::local_datetime>$crawled_time,
-                                                    files := (with
-                                                              raw_data := <json>$file_data,
-                                                              for item in json_array_unpack(raw_data) union (
-                                                                insert Files {
-                                                                    file_name := <str>item['file_name'],
-                                                                    file_url := <str>item['file_url']            
-                                                                } unless conflict on .file_url else (
-                                                                update Files
-                                                                set {
-                                                                    file_name := <str>item['file_name'],
-                                                                    file_url := <str>item['file_url']            
-                                                                }
-                                                                )
-                                                              )
-                                                              )
-                                                }
-                                            """, title=title_parsed, write_date=write_date_parsed, read_count=read_count_parsed,
-                                                     content=text_parsed, crawled_time=now,
-                                                     article_url=article_url_parsed, file_data=json.dumps(file_list))
+                                client.query("""
+                                    insert ite {
+                                        board := <str>$board,
+                                        num := <str>$num,
+                                        title := <str>$title,
+                                        writer := <str>$writer,
+                                        write_date := <cal::local_date>$write_date,
+                                        read_count := <int64>$read_count,
+                                        article_url := <str>$article_url,
+                                        content := <str>$content,
+                                        crawled_time := <cal::local_datetime>$crawled_time,
+                                        files := (with
+                                                  raw_data := <json>$file_data,
+                                                  for item in json_array_unpack(raw_data) union (
+                                                    insert Files {
+                                                      file_name := <str>item['file_name'],
+                                                      file_url := <str>item['file_url']            
+                                                    }
+                                                  )
+                                                  )
+                                    }
+                                """, board=board, num=num_parsed, title=title_parsed, writer=writer_parsed,
+                                             write_date=write_date_parsed, read_count=read_count_parsed,
+                                             article_url=article_url_parsed, content=text_parsed, crawled_time=now,
+                                             file_data=json.dumps(file_list))
 
                     except AttributeError:
                         # If attribute error faced, It means the article is blinded.
@@ -128,3 +100,6 @@ async def ite_parser(board_num: int, page: int):
                 pass
 
     client.close()
+
+
+asyncio.run(ite_parser(247, 1))
