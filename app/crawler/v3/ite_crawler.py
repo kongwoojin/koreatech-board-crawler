@@ -1,4 +1,3 @@
-import asyncio
 import json
 
 import aiohttp
@@ -65,31 +64,62 @@ async def ite_parser(board_num: int, page: int):
 
                                 board = str(board_num)
 
-                                client.query("""
-                                    insert ite {
-                                        board := <str>$board,
-                                        num := <str>$num,
-                                        title := <str>$title,
-                                        writer := <str>$writer,
-                                        write_date := <cal::local_date>$write_date,
-                                        read_count := <int64>$read_count,
-                                        article_url := <str>$article_url,
-                                        content := <str>$content,
-                                        crawled_time := <cal::local_datetime>$crawled_time,
-                                        files := (with
-                                                  raw_data := <json>$file_data,
-                                                  for item in json_array_unpack(raw_data) union (
-                                                    insert Files {
-                                                      file_name := <str>item['file_name'],
-                                                      file_url := <str>item['file_url']            
-                                                    }
-                                                  )
-                                                  )
-                                    }
-                                """, board=board, num=num_parsed, title=title_parsed, writer=writer_parsed,
-                                             write_date=write_date_parsed, read_count=read_count_parsed,
-                                             article_url=article_url_parsed, content=text_parsed, crawled_time=now,
-                                             file_data=json.dumps(file_list))
+                                try:
+                                    client.query("""
+                                        insert ite {
+                                            board := <str>$board,
+                                            num := <str>$num,
+                                            title := <str>$title,
+                                            writer := <str>$writer,
+                                            write_date := <cal::local_date>$write_date,
+                                            read_count := <int64>$read_count,
+                                            article_url := <str>$article_url,
+                                            content := <str>$content,
+                                            crawled_time := <cal::local_datetime>$crawled_time,
+                                            files := (with
+                                                      raw_data := <json>$file_data,
+                                                      for item in json_array_unpack(raw_data) union (
+                                                        insert Files {
+                                                          file_name := <str>item['file_name'],
+                                                          file_url := <str>item['file_url']            
+                                                        }
+                                                      )
+                                                      )
+                                        }
+                                    """, board=board, num=num_parsed, title=title_parsed, writer=writer_parsed,
+                                                 write_date=write_date_parsed, read_count=read_count_parsed,
+                                                 article_url=article_url_parsed, content=text_parsed, crawled_time=now,
+                                                 file_data=json.dumps(file_list))
+
+                                except edgedb.errors.ConstraintViolationError:
+                                    client.query("""
+                                        update ite
+                                        filter .article_url = <str>$article_url
+                                        set {
+                                            title := <str>$title,
+                                            write_date := <cal::local_date>$write_date,
+                                            read_count := <int64>$read_count,
+                                            content := <str>$content,
+                                            crawled_time := <cal::local_datetime>$crawled_time,
+                                            files := (with
+                                                      raw_data := <json>$file_data,
+                                                      for item in json_array_unpack(raw_data) union (
+                                                        insert Files {
+                                                            file_name := <str>item['file_name'],
+                                                            file_url := <str>item['file_url']            
+                                                        } unless conflict on .file_url else (
+                                                        update Files
+                                                        set {
+                                                            file_name := <str>item['file_name'],
+                                                            file_url := <str>item['file_url']            
+                                                        }
+                                                        )
+                                                      )
+                                                      )
+                                        }
+                                    """, title=title_parsed, write_date=write_date_parsed, read_count=read_count_parsed,
+                                                 content=text_parsed, crawled_time=now,
+                                                 article_url=article_url_parsed, file_data=json.dumps(file_list))
 
                     except AttributeError:
                         # If attribute error faced, It means the article is blinded.
@@ -100,6 +130,3 @@ async def ite_parser(board_num: int, page: int):
                 pass
 
     client.close()
-
-
-asyncio.run(ite_parser(247, 1))
