@@ -12,11 +12,6 @@ async def get_mechanical_notice(params: dict = Depends(mechanical_notice)):
     return params
 
 
-@router.get("/lecture/")
-async def get_mechanical_lecture_notice(params: dict = Depends(mechanical_lecture_notice)):
-    return params
-
-
 @router.get("/free/")
 async def get_mechanical_free_board(params: dict = Depends(mechanical_free_board)):
     return params
