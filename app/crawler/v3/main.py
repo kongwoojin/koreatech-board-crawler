@@ -41,7 +41,7 @@ async def main_ite_crawler(last_page: int = 2):
 
 
 async def main_mechanical_crawler(last_page: int = 2):
-    for board in [229, 230, 232]:
+    for board in [229, 232]:
         for page in range(1, last_page):
             await mechanical_crawler.mechanical_parser(board, page)
 

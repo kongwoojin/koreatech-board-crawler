@@ -39,10 +39,5 @@ async def get_article(uuid: str):
 async def mechanical_notice(page: int = 1, num_of_items: int = 20):
     return await get_data("229", page, num_of_items)
 
-
-async def mechanical_lecture_notice(page: int = 1, num_of_items: int = 20):
-    return await get_data("230", page, num_of_items)
-
-
 async def mechanical_free_board(page: int = 1, num_of_items: int = 20):
     return await get_data("232", page, num_of_items)
