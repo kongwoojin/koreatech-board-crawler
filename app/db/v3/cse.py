@@ -42,7 +42,7 @@ async def cse_notice(page: int = 1, num_of_items: int = 20):
 
 
 async def cse_job_board(page: int = 1, num_of_items: int = 20):
-    return await get_data("job", page, num_of_items)
+    return await get_data("jobboard", page, num_of_items)
 
 
 async def cse_free_board(page: int = 1, num_of_items: int = 20):
