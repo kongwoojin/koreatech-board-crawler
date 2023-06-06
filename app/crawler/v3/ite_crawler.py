@@ -1,4 +1,3 @@
-import asyncio
 import json
 
 import aiohttp
@@ -100,6 +99,3 @@ async def ite_parser(board_num: int, page: int):
                 pass
 
     client.close()
-
-
-asyncio.run(ite_parser(247, 1))
