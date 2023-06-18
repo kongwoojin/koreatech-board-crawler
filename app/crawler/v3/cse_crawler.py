@@ -191,7 +191,8 @@ async def board_crawler(board: str, start_page: int, last_page: int):
     board_list = []
 
     # limit TCPConnector to 10 for avoid ServerDisconnectedError
-    connector = aiohttp.TCPConnector(limit=10)
+    # Enable force_close to disable HTTP Keep-Alive
+    connector = aiohttp.TCPConnector(limit=10, force_close=True)
     async with aiohttp.ClientSession(connector=connector) as session:
         pages = [asyncio.ensure_future(board_page_crawler(session, board, page, True)) for page in
                  range(start_page, last_page + 1)]
@@ -205,7 +206,8 @@ async def board_crawler(board: str, start_page: int, last_page: int):
 
 async def sched_board_crawler(board: str):
     # limit TCPConnector to 10 for avoid ServerDisconnectedError
-    connector = aiohttp.TCPConnector(limit=10)
+    # Enable force_close to disable HTTP Keep-Alive
+    connector = aiohttp.TCPConnector(limit=10, force_close=True)
     async with aiohttp.ClientSession(connector=connector) as session:
         board_list = await board_page_crawler(session, board, 1)
 
