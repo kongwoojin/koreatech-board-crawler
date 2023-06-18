@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import edgedb
 
-from app.crawler.v3 import headers
+from app.crawler.v3 import headers, gather_with_concurrency
 from app.dataclass.board import Board
 from app.logs import crawling_log
 
@@ -209,12 +209,12 @@ async def board_crawler(board: str, m_code: str, start_page: int, last_page: int
         pages = [asyncio.ensure_future(board_page_crawler(session, board, m_code, page, True)) for page in
                  range(start_page, last_page + 1)]
 
-        datas = await asyncio.gather(*pages)
+        datas = await gather_with_concurrency(100, *pages)
         for data in datas:
             board_list.extend(data)
 
         tasks = [asyncio.ensure_future(article_parser(session, data)) for data in board_list]
-        await asyncio.gather(*tasks)
+        await gather_with_concurrency(100, *tasks)
 
 
 async def sched_board_crawler(board: str, m_code: str):
@@ -225,4 +225,4 @@ async def sched_board_crawler(board: str, m_code: str):
         board_list = await board_page_crawler(session, board, m_code, 1)
 
         tasks = [asyncio.ensure_future(article_parser(session, data)) for data in board_list]
-        await asyncio.gather(*tasks)
+        await gather_with_concurrency(100, *tasks)
