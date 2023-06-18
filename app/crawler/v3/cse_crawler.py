@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import edgedb
 
+from app.crawler.v3 import headers
 from app.dataclass.board import Board
 from app.logs import crawling_log
 
@@ -22,7 +23,7 @@ async def article_parser(session, data: Board):
 
     crawling_log.article_crawling_log(data)
 
-    async with session.get(data.article_url) as resp:
+    async with session.get(data.article_url, headers=headers) as resp:
         # add small delay for avoid ServerDisconnectedError
         await asyncio.sleep(0.01)
         if resp.status == 200:
@@ -145,7 +146,7 @@ async def board_page_crawler(session, board: str, page: int, ignore_date=False):
 
     date_of_last_article = 0
 
-    async with session.get(url) as resp:
+    async with session.get(url, headers=headers) as resp:
         # add small delay for avoid ServerDisconnectedError
         await asyncio.sleep(0.01)
         if resp.status == 200:
