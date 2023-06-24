@@ -20,6 +20,7 @@ async def article_parser(session, data: Board):
     num_parsed = data.num
     board = data.board
     article_url_parsed = data.article_url
+    writer_parsed = data.writer
 
     crawling_log.article_crawling_log(data)
 
@@ -35,9 +36,6 @@ async def article_parser(session, data: Board):
             try:
                 title_parsed = soup.select_one(
                     "#main-content > div > div > div.board_read > div.read_header > h1 > a").text.strip()
-                writer_parsed = soup.select_one(
-                    "#main-content > div > div > div.board_read > div.read_header > p.meta > a") \
-                    .text.strip()
                 write_date_parsed = soup.select_one(
                     "#main-content > div > div > div.board_read > div.read_header > p.time").text.strip()
                 write_date_parsed = datetime.strptime(write_date_parsed, '%Y.%m.%d %H:%M')
@@ -160,6 +158,7 @@ async def board_page_crawler(session, board: str, page: int, ignore_date=False):
                     num_parsed = post.select_one("td:nth-child(1)").text.strip()
                     article_url_parsed = post.select_one("td.title > a").get('href')
                     article_url_parsed = re.sub("&page=\d*", "", article_url_parsed)
+                    writer_parsed = post.select_one("td.author").text.strip()
                     write_date_parsed = post.select_one("td.time").text.strip()
                     write_date_parsed = datetime.strptime(write_date_parsed, '%Y.%m.%d')
 
@@ -172,7 +171,8 @@ async def board_page_crawler(session, board: str, page: int, ignore_date=False):
                     board_list.append(Board(
                         board=board,
                         num=num_parsed,
-                        article_url=article_url_parsed
+                        article_url=article_url_parsed,
+                        writer=writer_parsed
                     ))
                 except Exception as e:
                     crawling_log.unknown_exception_error(e)
