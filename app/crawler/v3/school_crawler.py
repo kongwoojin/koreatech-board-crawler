@@ -107,6 +107,7 @@ async def article_parser(session, data: Board):
                     filter .article_url = <str>$article_url
                     set {
                         title := <str>$title,
+                        writer := <str>$writer,
                         is_importance := <bool>$is_importance,
                         write_date := <cal::local_date>$write_date,
                         read_count := <int64>$read_count,
@@ -128,8 +129,8 @@ async def article_parser(session, data: Board):
                                   )
                                   )
                     }
-                """, title=title_parsed, write_date=write_date_parsed, read_count=read_count_parsed,
-                             content=text_parsed, crawled_time=now,
+                """, title=title_parsed, write_date=write_date_parsed, writer=writer_parsed,
+                             read_count=read_count_parsed, content=text_parsed, crawled_time=now,
                              article_url=article_url_parsed, file_data=json.dumps(file_list),
                              is_importance=is_importance)
 
