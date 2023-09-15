@@ -41,6 +41,7 @@ async def article_parser(session, data: Board):
                 text_parsed = soup.select_one(
                     "div.artclView").decode_contents()
                 text_parsed = text_parsed.replace("<img", "<br><img")
+                text_parsed = text_parsed.replace("/dext5editordata", "https://cms3.koreatech.ac.kr/dext5editordata")
                 read_count_parsed = int(soup.select_one("div.right > dl:nth-child(4) > dd").text.strip())
 
                 files = soup.select("div.artclItem.viewForm > dl > dd > ul > li")
