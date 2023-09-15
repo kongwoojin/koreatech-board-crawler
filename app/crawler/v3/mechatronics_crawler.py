@@ -184,20 +184,6 @@ async def board_page_crawler(session, board_num: int, page: int, ignore_date=Fal
             board_list.extend(await board_page_crawler(session, board_num + 1, page))
             return board_list
 
-async def board_crawler(board_num: int, start_page: int, last_page: int):
-    board_list = []
-
-    # limit TCPConnector to 10 for avoid ServerDisconnectedError
-    connector = aiohttp.TCPConnector(limit=10)
-    async with aiohttp.ClientSession(connector=connector) as session:
-        pages = [asyncio.ensure_future(board_page_crawler(session, board_num, page)) for page in
-                 range(start_page, last_page + 1)]
-        datas = await gather_with_concurrency(100, *pages)
-        for data in datas:
-            board_list.extend(data)
-
-        tasks = [asyncio.ensure_future(article_parser(session, data)) for data in board_list]
-        await gather_with_concurrency(100, *tasks)
 
 async def board_crawler(board_num: int, start_page: int, last_page: int):
     board_list = []
