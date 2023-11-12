@@ -1,5 +1,6 @@
 ## koreatech-board-crawler
-비공식 한국기술교육대학교 공지사항, 게시판 클라이언트 REST API
+Koreatech board crawler is web crawler to crawling data from koreatech's notice boards.
+
 
 ## 사용된 기술 스택
 * [Python](https://www.python.org/)
