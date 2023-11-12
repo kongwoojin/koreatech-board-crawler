@@ -7,7 +7,7 @@ license = "MIT License"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 bs4 = "^0.0.1"
 edgedb = "^1.7.0"
 rocketry = "^2.5.1"
