@@ -25,14 +25,14 @@ def article_crawling_log(data: Board):
     print("{} {:<24}: Start crawling article {} of {}".format(current_time(), caller, data.num, data.board))
 
 
-def board_crawling_log(board):
+def board_crawling_log(board, page: int):
     caller = os.path.splitext(os.path.basename(inspect.stack()[1].filename))[0]
-    print("{} {:<24}: Failed to get last page of {}".format(current_time(), caller, board))
+    print("{} {:<24}: Start crawling page {} of {}".format(current_time(), caller, page, board))
 
 
 def unknown_last_page_error(board):
     caller = os.path.splitext(os.path.basename(inspect.stack()[1].filename))[0]
-    print("{} {:<24}: Failed to crawling {} due to attribute error, {}".format(current_time(), caller, url, exception))
+    print("{} {:<24}: Failed to get last page of {}".format(current_time(), caller, board))
 
 
 def current_time():
