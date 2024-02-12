@@ -7,7 +7,7 @@ from script.last_page import get_common_last_page, get_cse_last_page, get_dorm_l
 
 async def main_arch_crawler():
     for board in [340, 341]:
-        for i in range(1, await get_common_last_page(board)):
+        for i in range(1, await get_common_last_page("arch", board)):
             await arch_crawler.board_crawler(board, i, i)
 
 
@@ -25,31 +25,31 @@ async def main_dorm_crawler():
 
 async def main_emc_crawler():
     for board in [541]:
-        for i in range(1, await get_common_last_page(board)):
+        for i in range(1, await get_common_last_page("emc", board)):
             await emc_crawler.board_crawler(board, i, i)
 
 
 async def main_ide_crawler():
     for board in [330, 332]:
-        for i in range(1, await get_common_last_page(board)):
+        for i in range(1, await get_common_last_page("ide", board)):
             await ide_crawler.board_crawler(board, i, i)
 
 
 async def main_ite_crawler():
     for board in [247]:
-        for i in range(1, await get_common_last_page(board)):
+        for i in range(1, await get_common_last_page("ite", board)):
             await ite_crawler.board_crawler(board, i, i)
 
 
 async def main_mechanical_crawler():
     for board in [229]:
-        for i in range(1, await get_common_last_page(board)):
+        for i in range(1, await get_common_last_page("me", board)):
             await mechanical_crawler.board_crawler(board, i, i)
 
 
 async def main_mechatronics_crawler():
     for board in [235, 236, 237, 238, 244]:
-        for i in range(1, await get_common_last_page(board)):
+        for i in range(1, await get_common_last_page("mechatronics", board)):
             await mechatronics_crawler.board_crawler(board, i, i)
 
 
@@ -61,7 +61,7 @@ async def main_school_crawler():
 
 async def main_sim_crawler():
     for board in [373]:
-        for i in range(1, await get_common_last_page(board)):
+        for i in range(1, await get_common_last_page("sim", board)):
             await sim_crawler.board_crawler(board, i, i)
 
 
