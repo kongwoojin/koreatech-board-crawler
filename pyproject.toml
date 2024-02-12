@@ -13,6 +13,7 @@ edgedb = "^1.7.0"
 rocketry = "^2.5.1"
 aiohttp = "^3.8.6"
 pydantic = "1.10.10"
+python-dotenv = "^1.0.1"
 
 
 

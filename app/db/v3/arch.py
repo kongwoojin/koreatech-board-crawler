@@ -2,7 +2,9 @@ import edgedb
 from fastapi.encoders import jsonable_encoder
 from math import ceil
 
-client = edgedb.create_async_client()
+from app.db.v3 import edgedb_client
+
+client = edgedb_client()
 
 
 async def get_data(board: str, page: int, num_of_items: int):
@@ -36,11 +38,10 @@ async def get_article(uuid: str):
     except Exception:
         return jsonable_encoder({"error": "Unknown error!"})
 
+
 async def arch_notice(page: int = 1, num_of_items: int = 20):
     return await get_data("340", page, num_of_items)
 
 
 async def arch_free_board(page: int = 1, num_of_items: int = 20):
-    return await get_data("341", page,num_of_items)
-
-
+    return await get_data("341", page, num_of_items)

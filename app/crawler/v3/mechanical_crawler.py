@@ -10,11 +10,12 @@ import edgedb
 
 from app.crawler.v3 import headers, gather_with_concurrency
 from app.dataclass.board import Board
+from app.db.v3 import edgedb_client
 from app.logs import crawling_log
 
 
 async def article_parser(session, data: Board):
-    client = edgedb.create_client()
+    client = edgedb_client()
     now = datetime.now()
 
     num_parsed = data.num

@@ -2,7 +2,9 @@ import edgedb
 from fastapi.encoders import jsonable_encoder
 from math import ceil
 
-client = edgedb.create_async_client()
+from app.db.v3 import edgedb_client
+
+client = edgedb_client()
 
 
 async def get_data(board: str, page: int, num_of_items: int):
