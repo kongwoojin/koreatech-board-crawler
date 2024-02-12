@@ -30,11 +30,9 @@ def board_crawling_log(board):
     print("{} {:<24}: Failed to get last page of {}".format(current_time(), caller, board))
 
 
-
 def unknown_last_page_error(board):
     caller = os.path.splitext(os.path.basename(inspect.stack()[1].filename))[0]
     print("{} {:<24}: Failed to crawling {} due to attribute error, {}".format(current_time(), caller, url, exception))
-
 
 
 def current_time():

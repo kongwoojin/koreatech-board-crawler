@@ -20,7 +20,7 @@ async def get_cse_last_page(board):
                     return int(page)
 
                 except AttributeError:
-                    crawling_log.board_crawling_log(board)
+                    crawling_log.unknown_last_page_error(board)
                     return 1
             else:
                 crawling_log.http_response_error(resp.status, board)
@@ -44,7 +44,7 @@ async def get_common_last_page(board_num):
                     return int(match.group(1))
 
                 except AttributeError:
-                    crawling_log.board_crawling_log(board_num)
+                    crawling_log.unknown_last_page_error(board_num)
                     return 1
             else:
                 crawling_log.http_response_error(resp.status, board_num)
@@ -64,7 +64,7 @@ async def get_school_last_page(board, m_code):
                     return int(page)
 
                 except AttributeError:
-                    crawling_log.board_crawling_log(board)
+                    crawling_log.unknown_last_page_error(board)
                     return 1
             else:
                 crawling_log.http_response_error(resp.status, board)
@@ -88,7 +88,7 @@ async def get_dorm_last_page(board):
                     return int(match.group(1))
 
                 except AttributeError:
-                    crawling_log.board_crawling_log(board)
+                    crawling_log.unknown_last_page_error(board)
                     return 1
             else:
                 crawling_log.http_response_error(resp.status, board)
