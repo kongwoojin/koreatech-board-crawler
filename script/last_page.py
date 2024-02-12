@@ -7,15 +7,15 @@ from app.logs import crawling_log
 
 
 async def get_cse_last_page(board):
-    async with aiohttp.ClientSession() as session:
+    async with (aiohttp.ClientSession() as session):
         async with session.get(f"https://cse.koreatech.ac.kr/index.php?mid={board}") as resp:
             if resp.status == 200:
                 html = await resp.text()
                 soup = BeautifulSoup(html, 'html.parser')
 
                 try:
-                    page = soup.select_one("a.direction:nth-child(12)").text.strip(
-                    ).replace("https://cse.koreatech.ac.kr/index.php?mid=notice&page=", "")
+                    page = soup.select_one("a.direction:nth-child(12)").get("href").replace(
+                        "https://cse.koreatech.ac.kr/index.php?mid=notice&page=", "")
 
                     return int(page)
 
@@ -59,7 +59,7 @@ async def get_school_last_page(board, m_code):
                 soup = BeautifulSoup(html, 'html.parser')
 
                 try:
-                    page = soup.select_one(".lastpage").text.strip().replace("?robot=Y&mCode=MN230&page=", "")
+                    page = soup.select_one(".lastpage").get("href").replace("?robot=Y&mCode=MN230&page=", "")
 
                     return int(page)
 
@@ -73,7 +73,8 @@ async def get_school_last_page(board, m_code):
 
 async def get_dorm_last_page(board):
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"https://dorm.koreatech.ac.kr/content/board/list.php?now_page=&GUBN=&SEARCH=&BOARDID={board}") as resp:
+        async with session.get(
+                f"https://dorm.koreatech.ac.kr/content/board/list.php?now_page=&GUBN=&SEARCH=&BOARDID={board}") as resp:
             if resp.status == 200:
                 html = await resp.text()
                 soup = BeautifulSoup(html, 'html.parser')
