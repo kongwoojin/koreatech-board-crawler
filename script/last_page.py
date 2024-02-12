@@ -14,10 +14,13 @@ async def get_cse_last_page(board):
                 soup = BeautifulSoup(html, 'html.parser')
 
                 try:
-                    page = soup.select_one("a.direction:nth-child(12)").get("href").replace(
-                        "https://cse.koreatech.ac.kr/index.php?mid=notice&page=", "")
+                    page = soup.select_one("a.direction:nth-child(12)").get("href")
 
-                    return int(page) + 1
+                    pattern = r"page=(\d+)"
+
+                    match = re.search(pattern, page)
+
+                    return int(match.group(1)) + 1
 
                 except AttributeError:
                     crawling_log.unknown_last_page_error(board)
@@ -59,9 +62,13 @@ async def get_school_last_page(board, m_code):
                 soup = BeautifulSoup(html, 'html.parser')
 
                 try:
-                    page = soup.select_one(".lastpage").get("href").replace("?robot=Y&mCode=MN230&page=", "")
+                    page = soup.select_one(".lastpage").get("href")
 
-                    return int(page) + 1
+                    pattern = r"page=(\d+)"
+
+                    match = re.search(pattern, page)
+
+                    return int(match.group(1)) + 1
 
                 except AttributeError:
                     crawling_log.unknown_last_page_error(board)
