@@ -20,4 +20,7 @@ class ServerRefusedError(Exception):
         self.data = data
 
     def __str__(self):
+        return None
+
+    def data(self):
         return self.data

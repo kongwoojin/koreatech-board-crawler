@@ -140,7 +140,7 @@ async def article_parser(session, data: Board):
             else:
                 crawling_log.http_response_error(resp.status, article_url_parsed)
     except (Exception, ClientConnectorError):
-        raise ServerRefusedError(data.article_url)
+        raise ServerRefusedError(data)
 
     client.close()
 
@@ -154,46 +154,49 @@ async def board_page_crawler(session, board: str, m_code: str, page: int, ignore
 
     date_of_last_article = 0
 
-    async with session.get(url, headers=headers) as resp:
-        # add small delay for avoid ServerDisconnectedError
-        await asyncio.sleep(0.01)
-        if resp.status == 200:
-            html = await resp.text()
-            soup = BeautifulSoup(html, 'html.parser')
+    try:
+        async with session.get(url, headers=headers) as resp:
+            # add small delay for avoid ServerDisconnectedError
+            await asyncio.sleep(0.01)
+            if resp.status == 200:
+                html = await resp.text()
+                soup = BeautifulSoup(html, 'html.parser')
 
-            posts = soup.select("#board-wrap > div.board-list-wrap > table > tbody > tr")
+                posts = soup.select("#board-wrap > div.board-list-wrap > table > tbody > tr")
 
-            for post in posts:
-                try:
-                    num_parsed = post.select_one("td.num:nth-child(1)").text.strip()
-                    article_url_parsed = post.select_one("td.subject > a").get('href')
-                    article_url_parsed = f"https://koreatech.ac.kr{article_url_parsed}"
-                    write_date_parsed = post.select_one("td.date").text.strip()
-                    write_date_parsed = datetime.strptime(write_date_parsed, '%Y.%m.%d')
-
-                    date_of_last_article = write_date_parsed
-
-                    # If article older than 7 days, pass it
-                    if not ignore_date and (datetime.today() - timedelta(days=7) > write_date_parsed):
-                        continue
-
+                for post in posts:
                     try:
-                        importance_img = post.select_one("td.subject > img")
-                        if importance_img.get("src") == "/resources/_Img/Board/default/ico_notice.gif":
-                            is_importance = True
-                        else:
-                            is_importance = False
-                    except AttributeError:
-                        is_importance = False
+                        num_parsed = post.select_one("td.num:nth-child(1)").text.strip()
+                        article_url_parsed = post.select_one("td.subject > a").get('href')
+                        article_url_parsed = f"https://koreatech.ac.kr{article_url_parsed}"
+                        write_date_parsed = post.select_one("td.date").text.strip()
+                        write_date_parsed = datetime.strptime(write_date_parsed, '%Y.%m.%d')
 
-                    board_list.append(Board(
-                        board=board,
-                        num=num_parsed,
-                        article_url=article_url_parsed,
-                        is_importance=is_importance
-                    ))
-                except Exception as e:
-                    crawling_log.unknown_exception_error(e)
+                        date_of_last_article = write_date_parsed
+
+                        # If article older than 7 days, pass it
+                        if not ignore_date and (datetime.today() - timedelta(days=7) > write_date_parsed):
+                            continue
+
+                        try:
+                            importance_img = post.select_one("td.subject > img")
+                            if importance_img.get("src") == "/resources/_Img/Board/default/ico_notice.gif":
+                                is_importance = True
+                            else:
+                                is_importance = False
+                        except AttributeError:
+                            is_importance = False
+
+                        board_list.append(Board(
+                            board=board,
+                            num=num_parsed,
+                            article_url=article_url_parsed,
+                            is_importance=is_importance
+                        ))
+                    except Exception as e:
+                        crawling_log.unknown_exception_error(e)
+    except (Exception, ClientConnectorError):
+        raise ServerRefusedError(page)
 
     if ignore_date:
         return board_list
@@ -206,20 +209,32 @@ async def board_page_crawler(session, board: str, m_code: str, page: int, ignore
 
 
 async def board_crawler(board: str, m_code: str, start_page: int, last_page: int):
-    board_list = []
-
     # limit TCPConnector to 10 for avoid ServerDisconnectedError
     # Enable force_close to disable HTTP Keep-Alive
     connector = aiohttp.TCPConnector(limit=10, force_close=True)
     async with aiohttp.ClientSession(connector=connector) as session:
-        pages = [asyncio.ensure_future(board_page_crawler(session, board, m_code, page, True)) for page in
-                 range(start_page, last_page + 1)]
-
-        datas = await gather_with_concurrency(100, *pages)
-        for data in datas:
-            board_list.extend(data)
+        board_list = await board_list_crawler(session, board, m_code, start_page, last_page)
 
         await board_crawler_task(session, board_list)
+
+
+async def board_list_crawler(session, board: str, m_code: str, start_page: int, last_page: int):
+    board_list = []
+    failed_page = []
+
+    pages = [asyncio.ensure_future(board_page_crawler(session, board, m_code, page, True)) for page in
+             range(start_page, last_page + 1)]
+    datas = await gather_with_concurrency(100, *pages)
+    for data in datas:
+        board_list.extend([i for i in data if isinstance(i, Board)])
+        failed_page.extend([int(i.data) for i in data if isinstance(i, ServerRefusedError)])
+
+    failed_page.sort()
+
+    if failed_page:
+        board_list.extend(await board_list_crawler(session, board, m_code, failed_page[0], failed_page[-1]))
+
+    return board_list
 
 
 async def board_crawler_task(session, board_list):
@@ -227,6 +242,7 @@ async def board_crawler_task(session, board_list):
     result = await gather_with_concurrency(100, *tasks)
 
     failed_data = [i for i in result if i is not None]
+    failed_data = [i.data for i in failed_data]
 
     if failed_data:
         await board_crawler_task(session, failed_data)
