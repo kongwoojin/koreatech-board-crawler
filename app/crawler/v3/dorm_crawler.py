@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import edgedb
 
-from app.crawler.v3 import headers, gather_with_concurrency
+from app.crawler.v3 import headers, gather_with_concurrency, ServerRefusedError
 from app.dataclass.board import Board
 from app.db.v3 import edgedb_client
 from app.logs import crawling_log
@@ -24,47 +24,48 @@ async def article_parser(session, data: Board):
 
     crawling_log.article_crawling_log(data)
 
-    async with session.get(data.article_url, headers=headers) as resp:
-        # add small delay for avoid ServerDisconnectedError
-        await asyncio.sleep(0.01)
-        if resp.status == 200:
-            html = await resp.text()
-            soup = BeautifulSoup(html, 'html.parser')
+    try:
+        async with session.get(data.article_url, headers=headers) as resp:
+            # add small delay for avoid ServerDisconnectedError
+            await asyncio.sleep(0.01)
+            if resp.status == 200:
+                html = await resp.text()
+                soup = BeautifulSoup(html, 'html.parser')
 
-            file_list = []
+                file_list = []
 
-            try:
-                title_parsed = soup.select_one("#board > div.boardViewer > h4").text.strip()
-                text_parsed = soup.select_one(
-                    "#board > div.boardViewer > table.viewer div.story").decode_contents()
-                text_parsed = text_parsed.replace("<img", "<br><img")
-                writer_parsed = soup.select_one(
-                    "#board > div.boardViewer > table.viewer > tr > td:nth-child(2)").text.strip()
-                write_date_parsed = soup.select_one(
-                    "#board > div.boardViewer > table.viewer > tr > td:nth-child(4)").text.strip()
-                write_date_parsed = datetime.strptime(write_date_parsed, '%Y-%m-%d')
-                read_count_parsed = int(soup.select_one(
-                    "#board > div.boardViewer > table.viewer > tr > td:nth-child(6)").text.strip())
+                try:
+                    title_parsed = soup.select_one("#board > div.boardViewer > h4").text.strip()
+                    text_parsed = soup.select_one(
+                        "#board > div.boardViewer > table.viewer div.story").decode_contents()
+                    text_parsed = text_parsed.replace("<img", "<br><img")
+                    writer_parsed = soup.select_one(
+                        "#board > div.boardViewer > table.viewer > tr > td:nth-child(2)").text.strip()
+                    write_date_parsed = soup.select_one(
+                        "#board > div.boardViewer > table.viewer > tr > td:nth-child(4)").text.strip()
+                    write_date_parsed = datetime.strptime(write_date_parsed, '%Y-%m-%d')
+                    read_count_parsed = int(soup.select_one(
+                        "#board > div.boardViewer > table.viewer > tr > td:nth-child(6)").text.strip())
 
-                files = soup.select("#board > div.boardViewer > table.viewer tr:nth-child(3) > td > a")
+                    files = soup.select("#board > div.boardViewer > table.viewer tr:nth-child(3) > td > a")
 
-                for file in files:
-                    file_url = file["href"]
-                    file_name = file.text
-                    file_name = re.sub("\[.*]", "", file_name).strip()
+                    for file in files:
+                        file_url = file["href"]
+                        file_name = file.text
+                        file_name = re.sub("\[.*]", "", file_name).strip()
 
-                    file_dic = {
-                        "file_url": f"https://dorm.koreatech.ac.kr{file_url}",
-                        "file_name": file_name
-                    }
+                        file_dic = {
+                            "file_url": f"https://dorm.koreatech.ac.kr{file_url}",
+                            "file_name": file_name
+                        }
 
-                    file_list.append(file_dic)
+                        file_list.append(file_dic)
 
-            except AttributeError as e:
-                crawling_log.attribute_exception_error(article_url_parsed, e)
+                except AttributeError as e:
+                    crawling_log.attribute_exception_error(article_url_parsed, e)
 
-            try:
-                client.query("""
+                try:
+                    client.query("""
                             insert dorm {
                                 board := <str>$board,
                                 num := <str>$num,
@@ -92,12 +93,12 @@ async def article_parser(session, data: Board):
                                           )
                             }
                         """, board=board, num=num_parsed, title=title_parsed, writer=writer_parsed,
-                             write_date=write_date_parsed, read_count=read_count_parsed,
-                             article_url=article_url_parsed, content=text_parsed, crawled_time=now,
-                             file_data=json.dumps(file_list))
+                                 write_date=write_date_parsed, read_count=read_count_parsed,
+                                 article_url=article_url_parsed, content=text_parsed, crawled_time=now,
+                                 file_data=json.dumps(file_list))
 
-            except edgedb.errors.ConstraintViolationError:
-                client.query("""
+                except edgedb.errors.ConstraintViolationError:
+                    client.query("""
                             update dorm
                             filter .article_url = <str>$article_url
                             set {
@@ -124,12 +125,14 @@ async def article_parser(session, data: Board):
                                           )
                             }
                             """, title=title_parsed, write_date=write_date_parsed,
-                             writer=writer_parsed, read_count=read_count_parsed,
-                             content=text_parsed, crawled_time=now,
-                             article_url=article_url_parsed, file_data=json.dumps(file_list))
+                                 writer=writer_parsed, read_count=read_count_parsed,
+                                 content=text_parsed, crawled_time=now,
+                                 article_url=article_url_parsed, file_data=json.dumps(file_list))
 
-        else:
-            crawling_log.http_response_error(resp.status, article_url_parsed)
+            else:
+                crawling_log.http_response_error(resp.status, article_url_parsed)
+    except Exception:
+        raise ServerRefusedError(data.article_url)
 
     client.close()
 
@@ -198,8 +201,17 @@ async def board_crawler(board: str, start_page: int, last_page: int):
         for data in datas:
             board_list.extend(data)
 
-        tasks = [asyncio.ensure_future(article_parser(session, data)) for data in board_list]
-        await gather_with_concurrency(100, *tasks)
+        await board_crawler_task(session, board_list)
+
+
+async def board_crawler_task(session, board_list):
+    tasks = [asyncio.ensure_future(article_parser(session, data)) for data in board_list]
+    result = await gather_with_concurrency(100, *tasks)
+
+    failed_data = [i for i in result if i is not None]
+
+    if failed_data:
+        await board_crawler_task(session, failed_data)
 
 
 async def sched_board_crawler(board: str):
@@ -209,5 +221,4 @@ async def sched_board_crawler(board: str):
     async with aiohttp.ClientSession(connector=connector) as session:
         board_list = await board_page_crawler(session, board, 1)
 
-        tasks = [asyncio.ensure_future(article_parser(session, data)) for data in board_list]
-        await gather_with_concurrency(100, *tasks)
+        await board_crawler_task(session, board_list)

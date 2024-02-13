@@ -8,14 +8,13 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import edgedb
 
-from app.crawler.v3 import headers, gather_with_concurrency
+from app.crawler.v3 import headers, gather_with_concurrency, ServerRefusedError
 from app.dataclass.board import Board
 from app.db.v3 import edgedb_client
 from app.logs import crawling_log
 
 
 async def article_parser(session, data: Board):
-    client = edgedb_client()
     now = datetime.now()
 
     num_parsed = data.num
@@ -25,112 +24,49 @@ async def article_parser(session, data: Board):
 
     crawling_log.article_crawling_log(data)
 
-    async with session.get(data.article_url, headers=headers) as resp:
-        # add small delay for avoid ServerDisconnectedError
-        await asyncio.sleep(0.01)
-        if resp.status == 200:
-            html = await resp.text()
-            soup = BeautifulSoup(html, 'html.parser')
+    try:
+        async with session.get(data.article_url, headers=headers) as resp:
+            # add small delay for avoid ServerDisconnectedError
+            await asyncio.sleep(0.01)
+            if resp.status == 200:
+                html = await resp.text()
+                soup = BeautifulSoup(html, 'html.parser')
 
-            file_list = []
+                file_list = []
 
-            try:
-                title_parsed = soup.select_one("div.artclViewTitleWrap > h2").text.strip().replace("\n", "") \
-                    .replace("\t", "").replace("［", "[").replace("］", "]")
-                write_date_parsed = soup.select_one(
-                    "div.right > dl:nth-child(1) > dd").text
-                write_date_parsed = datetime.strptime(write_date_parsed, '%Y.%m.%d')
-                text_parsed = soup.select_one(
-                    "div.artclView").decode_contents()
-                text_parsed = text_parsed.replace("<img", "<br><img")
-                text_parsed = text_parsed.replace("/dext5editordata", "https://cms3.koreatech.ac.kr/dext5editordata")
-                read_count_parsed = int(soup.select_one("div.right > dl:nth-child(4) > dd").text.strip())
+                try:
+                    title_parsed = soup.select_one("div.artclViewTitleWrap > h2").text.strip().replace("\n", "") \
+                        .replace("\t", "").replace("［", "[").replace("］", "]")
+                    write_date_parsed = soup.select_one(
+                        "div.right > dl:nth-child(1) > dd").text
+                    write_date_parsed = datetime.strptime(write_date_parsed, '%Y.%m.%d')
+                    text_parsed = soup.select_one(
+                        "div.artclView").decode_contents()
+                    text_parsed = text_parsed.replace("<img", "<br><img")
+                    text_parsed = text_parsed.replace("/dext5editordata",
+                                                      "https://cms3.koreatech.ac.kr/dext5editordata")
+                    read_count_parsed = int(soup.select_one("div.right > dl:nth-child(4) > dd").text.strip())
 
-                files = soup.select("div.artclItem.viewForm > dl > dd > ul > li")
+                    files = soup.select("div.artclItem.viewForm > dl > dd > ul > li")
 
-                for file in files:
-                    file_url = file.select_one("a")["href"]
-                    file_name = file.select_one("a").text
-                    file_name = re.sub("\[.*]", "", file_name).strip()
+                    for file in files:
+                        file_url = file.select_one("a")["href"]
+                        file_name = file.select_one("a").text
+                        file_name = re.sub("\[.*]", "", file_name).strip()
 
-                    file_dic = {
-                        "file_url": f'https://cms3.koreatech.ac.kr{file_url}',
-                        "file_name": file_name
-                    }
+                        file_dic = {
+                            "file_url": f'https://cms3.koreatech.ac.kr{file_url}',
+                            "file_name": file_name
+                        }
 
-                    file_list.append(file_dic)
-            except AttributeError as e:
-                crawling_log.attribute_exception_error(article_url_parsed, e)
+                        file_list.append(file_dic)
+                except AttributeError as e:
+                    crawling_log.attribute_exception_error(article_url_parsed, e)
 
-            try:
-                client.query("""
-                            insert ide {
-                                board := <str>$board,
-                                num := <str>$num,
-                                title := <str>$title,
-                                writer := <str>$writer,
-                                write_date := <cal::local_date>$write_date,
-                                read_count := <int64>$read_count,
-                                article_url := <str>$article_url,
-                                content := <str>$content,
-                                crawled_time := <cal::local_datetime>$crawled_time,
-                                files := (with
-                                          raw_data := <json>$file_data,
-                                          for item in json_array_unpack(raw_data) union (
-                                            insert Files {
-                                                file_name := <str>item['file_name'],
-                                                file_url := <str>item['file_url']            
-                                            } unless conflict on .file_url else (
-                                            update Files
-                                            set {
-                                                file_name := <str>item['file_name'],
-                                                file_url := <str>item['file_url']            
-                                            }
-                                            )
-                                          )
-                                          )
-                            }
-                        """, board=str(board), num=num_parsed, title=title_parsed, writer=writer_parsed,
-                             write_date=write_date_parsed, read_count=read_count_parsed,
-                             article_url=article_url_parsed, content=text_parsed, crawled_time=now,
-                             file_data=json.dumps(file_list))
-
-            except edgedb.errors.ConstraintViolationError:
-                client.query("""
-                            update ide
-                            filter .article_url = <str>$article_url
-                            set {
-                                title := <str>$title,
-                                writer := <str>$writer,
-                                write_date := <cal::local_date>$write_date,
-                                read_count := <int64>$read_count,
-                                content := <str>$content,
-                                crawled_time := <cal::local_datetime>$crawled_time,
-                                files := (with
-                                          raw_data := <json>$file_data,
-                                          for item in json_array_unpack(raw_data) union (
-                                            insert Files {
-                                                file_name := <str>item['file_name'],
-                                                file_url := <str>item['file_url']            
-                                            } unless conflict on .file_url else (
-                                            update Files
-                                            set {
-                                                file_name := <str>item['file_name'],
-                                                file_url := <str>item['file_url']            
-                                            }
-                                            )
-                                          )
-                                          )
-                            }
-                            """, title=title_parsed, write_date=write_date_parsed,
-                             writer=writer_parsed, read_count=read_count_parsed,
-                             content=text_parsed, crawled_time=now,
-                             article_url=article_url_parsed, file_data=json.dumps(file_list))
-
-        else:
-            crawling_log.http_response_error(resp.status, article_url_parsed)
-
-    client.close()
+            else:
+                crawling_log.http_response_error(resp.status, article_url_parsed)
+    except Exception:
+        raise ServerRefusedError(data.article_url)
 
 
 async def board_page_crawler(session, board_num: int, page: int, ignore_date=False):
@@ -199,8 +135,17 @@ async def board_crawler(board_num: int, start_page: int, last_page: int):
         for data in datas:
             board_list.extend(data)
 
-        tasks = [asyncio.ensure_future(article_parser(session, data)) for data in board_list]
-        await gather_with_concurrency(100, *tasks)
+        await board_crawler_task(session, board_list)
+
+
+async def board_crawler_task(session, board_list):
+    tasks = [asyncio.ensure_future(article_parser(session, data)) for data in board_list]
+    result = await gather_with_concurrency(100, *tasks)
+
+    failed_data = [i for i in result if i is not None]
+
+    if failed_data:
+        await board_crawler_task(session, failed_data)
 
 
 async def sched_board_crawler(board_num: int):
@@ -210,5 +155,4 @@ async def sched_board_crawler(board_num: int):
     async with aiohttp.ClientSession(connector=connector) as session:
         board_list = await board_page_crawler(session, board_num, 1)
 
-        tasks = [asyncio.ensure_future(article_parser(session, data)) for data in board_list]
-        await gather_with_concurrency(100, *tasks)
+        await board_crawler_task(session, board_list)
