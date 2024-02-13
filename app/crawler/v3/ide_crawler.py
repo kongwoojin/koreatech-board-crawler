@@ -4,6 +4,7 @@ import re
 import asyncio
 
 import aiohttp
+from aiohttp import ClientConnectorError
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import edgedb
@@ -65,7 +66,7 @@ async def article_parser(session, data: Board):
 
             else:
                 crawling_log.http_response_error(resp.status, article_url_parsed)
-    except Exception:
+    except (Exception, ClientConnectorError):
         raise ServerRefusedError(data.article_url)
 
 
