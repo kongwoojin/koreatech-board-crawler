@@ -226,8 +226,10 @@ async def board_list_crawler(session, board: str, m_code: str, start_page: int, 
              range(start_page, last_page + 1)]
     datas = await gather_with_concurrency(100, *pages)
     for data in datas:
-        board_list.extend([i for i in data if isinstance(i, Board)])
-        failed_page.extend([int(i.data) for i in data if isinstance(i, ServerRefusedError)])
+        try:
+            board_list.extend(data)
+        except TypeError:
+            failed_page.append(int(data.data))
 
     failed_page.sort()
 
