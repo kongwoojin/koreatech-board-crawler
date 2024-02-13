@@ -45,8 +45,7 @@ async def main_mechatronics_crawler():
 
 
 async def main_school_crawler():
-    for board, m_code in [("list", "MN230"), ("scholarList", "MN231"), ("bachelorList", "MN233"),
-                          ("boardList8", "MN427")]:
+    for board, m_code in [("list", "MN230"), ("scholarList", "MN231"), ("bachelorList", "MN233")]:
         await school_crawler.sched_board_crawler(board, m_code)
 
 

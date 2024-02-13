@@ -54,7 +54,7 @@ async def main_mechatronics_crawler():
 
 
 async def main_school_crawler():
-    for board, m_code in [("list", "MN230"), ("scholarList", "MN231"), ("bachelorList", "MN233"), ("boardList8", "MN427")]:
+    for board, m_code in [("list", "MN230"), ("scholarList", "MN231"), ("bachelorList", "MN233")]:
         for i in range(1, await get_school_last_page(board, m_code)):
             await school_crawler.board_crawler(board, m_code, i, i)
 
