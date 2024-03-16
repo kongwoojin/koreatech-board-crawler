@@ -6,7 +6,7 @@ module default {
     type notice {
         required property department -> Department;
         required property board -> Board;
-        required property num -> str;
+        required property num -> int64;
         required property is_notice -> bool;
         required property category -> Category;
         required property title -> str;
