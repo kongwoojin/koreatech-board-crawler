@@ -1,11 +1,14 @@
 module default {
     scalar type Department extending enum<ARCH, CSE, Dorm, EMC, IDE, ITE, Mechanical, Mechatronics, School, SIM>;
 
+    scalar type Category extending enum<None, Notice, EA, CA, Work, ETC>;
+
     type notice {
         required property department -> Department;
         required property board -> str;
         required property num -> str;
         required property is_notice -> bool;
+        required property category -> Category;
         required property title -> str;
         required property writer -> str;
         required property write_date -> cal::local_date;
