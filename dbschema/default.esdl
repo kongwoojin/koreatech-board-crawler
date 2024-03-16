@@ -1,28 +1,17 @@
 module default {
-    type arch {
-        required property board -> str;
-        required property num -> str;
-        required property title -> str;
-        required property writer -> str;
-        required property write_date -> cal::local_date;
-        required property read_count -> int64;
-        required property article_url -> str {
-            constraint exclusive;
-        };
-        required property content -> str;
-        multi link files -> Files {
-            on target delete allow;
-        };
-        required property crawled_time -> cal::local_datetime;
-    }
+    scalar type Department extending enum<ARCH, CSE, Dorm, EMC, IDE, ITE, Mechanical, Mechatronics, School, SIM>;
 
-    type cse {
+    type notice {
+        required property department -> Department;
         required property board -> str;
         required property num -> str;
+        required property is_notice -> bool;
         required property title -> str;
         required property writer -> str;
         required property write_date -> cal::local_date;
         required property read_count -> int64;
+        required property notice_start_date -> cal::local_date;
+        required property notice_end_date -> cal::local_date;
         required property article_url -> str {
             constraint exclusive;
         };
@@ -30,143 +19,8 @@ module default {
         multi link files -> Files {
             on target delete allow;
         };
-        required property crawled_time -> cal::local_datetime;
-    }
-
-    type dorm {
-        required property board -> str;
-        required property num -> str;
-        required property title -> str;
-        required property writer -> str;
-        required property write_date -> cal::local_date;
-        required property read_count -> int64;
-        required property article_url -> str {
-            constraint exclusive;
-        };
-        required property content -> str;
-        multi link files -> Files {
-            on target delete allow;
-        };
-        required property crawled_time -> cal::local_datetime;
-    }
-
-    type emc {
-        required property board -> str;
-        required property num -> str;
-        required property title -> str;
-        required property writer -> str;
-        required property write_date -> cal::local_date;
-        required property read_count -> int64;
-        required property article_url -> str {
-            constraint exclusive;
-        };
-        required property content -> str;
-        multi link files -> Files {
-            on target delete allow;
-        };
-        required property crawled_time -> cal::local_datetime;
-    }
-    type ide {
-        required property board -> str;
-        required property num -> str;
-        required property title -> str;
-        required property writer -> str;
-        required property write_date -> cal::local_date;
-        required property read_count -> int64;
-        required property article_url -> str {
-            constraint exclusive;
-        };
-        required property content -> str;
-        multi link files -> Files {
-            on target delete allow;
-        };
-        required property crawled_time -> cal::local_datetime;
-    }
-
-    type ite {
-        required property board -> str;
-        required property num -> str;
-        required property title -> str;
-        required property writer -> str;
-        required property write_date -> cal::local_date;
-        required property read_count -> int64;
-        required property article_url -> str {
-            constraint exclusive;
-        };
-        required property content -> str;
-        multi link files -> Files {
-            on target delete allow;
-        };
-        required property crawled_time -> cal::local_datetime;
-    }
-
-    type mechanical {
-        required property board -> str;
-        required property num -> str;
-        required property title -> str;
-        required property writer -> str;
-        required property write_date -> cal::local_date;
-        required property read_count -> int64;
-        required property article_url -> str {
-            constraint exclusive;
-        };
-        required property content -> str;
-        multi link files -> Files {
-            on target delete allow;
-        };
-        required property crawled_time -> cal::local_datetime;
-    }
-
-    type mechatronics {
-        required property board -> str;
-        required property num -> str;
-        required property title -> str;
-        required property writer -> str;
-        required property write_date -> cal::local_date;
-        required property read_count -> int64;
-        required property article_url -> str {
-            constraint exclusive;
-        };
-        required property content -> str;
-        multi link files -> Files {
-            on target delete allow;
-        };
-        required property crawled_time -> cal::local_datetime;
-    }
-
-    type school {
-        required property board -> str;
-        required property num -> str;
-        required property is_importance -> bool;
-        required property title -> str;
-        required property writer -> str;
-        required property write_date -> cal::local_date;
-        required property read_count -> int64;
-        required property article_url -> str {
-            constraint exclusive;
-        };
-        required property content -> str;
-        multi link files -> Files {
-            on target delete allow;
-        };
-        required property crawled_time -> cal::local_datetime;
-    }
-
-    type sim {
-        required property board -> str;
-        required property num -> str;
-        required property title -> str;
-        required property writer -> str;
-        required property write_date -> cal::local_date;
-        required property read_count -> int64;
-        required property article_url -> str {
-            constraint exclusive;
-        };
-        required property content -> str;
-        multi link files -> Files {
-            on target delete allow;
-        };
-        required property crawled_time -> cal::local_datetime;
+        required property init_crawled_time -> cal::local_datetime;
+        required property update_crawled_time -> cal::local_datetime;
     }
 
     type Files {
