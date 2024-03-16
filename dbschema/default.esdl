@@ -1,5 +1,5 @@
 module default {
-    scalar type Department extending enum<ARCH, CSE, DORM, EMC, IDE, ITE, MECHANICAL, MECHATRONICS, SCHOOL, SIM>;
+    scalar type Department extending enum<ARCH, CSE, DORM, MSE, ACE, IDE, ITE, MECHANICAL, MECHATRONICS, SCHOOL, SIM>;
     scalar type Board extending enum<NOTICE, FREE, JOB, PDS, LECTURE, BACHELOR, SCHOLAR>;
     scalar type Category extending enum<NONE, NOTICE, EA, CA, WORK, ETC>;
 
