@@ -1,70 +1,33 @@
 import asyncio
 
-from app.crawler.v3 import arch_crawler, cse_crawler, dorm_crawler, emc_crawler, ide_crawler, ite_crawler, \
-    mechanical_crawler, mechatronics_crawler, school_crawler, sim_crawler
+from app.crawler.v3 import dorm_crawler, school_crawler, common_crawler
+from app.dataclass.enums.department import Department
 
 
-async def main_arch_crawler():
-    for board in [340, 341]:
-        await arch_crawler.sched_board_crawler(board)
-
-
-async def main_cse_crawler():
-    for board in ["notice", "jobboard", "freeboard", "pds"]:
-        await cse_crawler.sched_board_crawler(board)
-
-
-async def main_dorm_crawler():
-    for board in ["notice", "bulletin"]:
-        await dorm_crawler.sched_board_crawler(board)
-
-
-async def main_emc_crawler():
-    for board in [541]:
-        await emc_crawler.sched_board_crawler(board)
-
-
-async def main_ide_crawler():
-    for board in [330, 332]:
-        await ide_crawler.sched_board_crawler(board)
-
-
-async def main_ite_crawler():
-    for board in [247]:
-        await ite_crawler.sched_board_crawler(board)
-
-
-async def main_mechanical_crawler():
-    for board in [229, 232]:
-        await mechanical_crawler.sched_board_crawler(board)
-
-
-async def main_mechatronics_crawler():
-    for board in [235, 236, 237, 238, 244]:
-        await mechatronics_crawler.sched_board_crawler(board)
+async def main_common_crawler():
+    departmentList = [Department.ARCH, Department.CSE, Department.MSE, Department.ACE, Department.IDE, Department.ITE,
+                      Department.MECHANICAL, Department.MECHATRONICS, Department.SIM]
+    for department in departmentList:
+        for index in range(0, department.board_len()):
+            await common_crawler.sched_board_crawler(department, index)
 
 
 async def main_school_crawler():
-    for board, m_code in [("list", "MN230"), ("scholarList", "MN231"), ("bachelorList", "MN233")]:
-        await school_crawler.sched_board_crawler(board, m_code)
+    department = Department.SCHOOL
+    for index in range(0, department.board_len()):
+        await school_crawler.sched_board_crawler(department, index)
 
 
-async def main_sim_crawler():
-    for board in [373]:
-        await sim_crawler.sched_board_crawler(board)
+async def main_dorm_crawler():
+    department = Department.DORM
+    for index in range(0, department.board_len()):
+        await dorm_crawler.sched_board_crawler(department, index)
 
 
 async def main_crawler():
     await asyncio.gather(
-        main_cse_crawler(),  # 4
-        main_school_crawler(),  # 4
-        main_dorm_crawler(),  # 2
-        main_arch_crawler(),  # 2
-        main_mechatronics_crawler(),  # 5
-        main_mechanical_crawler(),  # 3
-        main_ide_crawler(),  # 2
-        main_emc_crawler(),  # 1
-        main_ite_crawler(),  # 1
-        main_sim_crawler(),  # 1
+        main_school_crawler(),
+        main_dorm_crawler(),
+        main_common_crawler()
     )
 
