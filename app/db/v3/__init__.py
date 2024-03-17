@@ -2,9 +2,9 @@ import os
 
 import edgedb
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
-load_dotenv()
+load_dotenv(find_dotenv(usecwd=True))
 
 edgedb_host = os.getenv("EDGEDB.HOST")
 edgedb_port = os.getenv("EDGEDB.PORT")
