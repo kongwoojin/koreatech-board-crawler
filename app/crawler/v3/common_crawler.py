@@ -21,10 +21,11 @@ async def article_parser(department: Department, session, data: Board):
     now = datetime.now()
 
     board = data.board
-    pattern = r"SEQ=(\d+)"
+    pattern = r"list_no=(\d+)"
     match = re.search(pattern, data.article_url)
     num = int(match.group(1))
     is_notice = data.is_notice
+
     crawling_log.article_crawling_log(data, department.name)
 
     try:
@@ -37,40 +38,40 @@ async def article_parser(department: Department, session, data: Board):
 
                 file_list = []
 
-                try:
-                    title_parsed = soup.select_one("#board > div.boardViewer > h4").text.strip()
-                    text_parsed = soup.select_one(
-                        "#board > div.boardViewer > table.viewer div.story").decode_contents()
-                    text_parsed = text_parsed.replace("<img", "<br><img")
-                    writer_parsed = soup.select_one(
-                        "#board > div.boardViewer > table.viewer > tr > td:nth-child(2)").text.strip()
-                    write_date_parsed = soup.select_one(
-                        "#board > div.boardViewer > table.viewer > tr > td:nth-child(4)").text.strip()
-                    write_date_parsed = datetime.strptime(write_date_parsed, '%Y-%m-%d')
-                    read_count_parsed = int(soup.select_one(
-                        "#board > div.boardViewer > table.viewer > tr > td:nth-child(6)").text.strip())
+                title_parsed = soup.select_one(
+                    "#contents_body > article.board_view > h2").text.strip()
+                text_parsed = soup.select_one(
+                    "#contents_body > article.board_view > div.contents").decode_contents()
+                text_parsed = text_parsed.replace("<img", "<br><img")
 
-                    files = soup.select("#board > div.boardViewer > table.viewer tr:nth-child(3) > td > a")
+                writer_parsed = soup.select_one(
+                    "#contents_body > article.board_view > ul > li:nth-child(1) > span") \
+                    .text.strip()
+                write_date_parsed = soup.select_one(
+                    "#contents_body > article.board_view > ul > li.date > span").text.strip()
+                write_date_parsed = datetime.strptime(write_date_parsed, '%Y.%m.%d')
+                read_count_parsed = soup.select_one(
+                    "#contents_body > article.board_view > ul > li.hit > span").text.strip().replace(",", "")
+                read_count_parsed = int(read_count_parsed)
 
-                    for file in files:
-                        file_url = file["href"]
-                        file_name = file.text
-                        file_name = re.sub("\[.*]", "", file_name).strip()
+                files = soup.select("#contents_body > article.board_view > div.file > ul > li")
 
-                        file_dic = {
-                            "file_url": f"https://dorm.koreatech.ac.kr{file_url}",
-                            "file_name": file_name
-                        }
+                for file in files:
+                    file_url = file.select_one("a")["href"]
+                    file_name = file.select_one("a").text.strip()
+                    file_name = re.sub("\[.*]", "", file_name).strip()
 
-                        file_list.append(file_dic)
+                    file_dic = {
+                        "file_url": file_url,
+                        "file_name": file_name
+                    }
 
-                except AttributeError as e:
-                    crawling_log.attribute_exception_error(data.article_url, e)
+                    file_list.append(file_dic)
 
                 try:
                     client.query("""
                     insert notice {
-                        department := <Department>Department.DORM,
+                        department := <Department><str>$department,
                         board := <Board><str>$board,
                         num := <int64>$num,
                         is_notice := <bool>$is_notice,
@@ -84,7 +85,7 @@ async def article_parser(department: Department, session, data: Board):
                         update_crawled_time:=<cal::local_datetime>$crawled_time,
                         notice_start_date:=<cal::local_date>$write_date,
                         notice_end_date:=<cal::local_date>'9999-12-31',
-                        category:=<Category>Category.NONE,  
+                        category:=<Category>Category.NONE,
                         files := (with
                                   raw_data := <json>$file_data,
                                   for item in json_array_unpack(raw_data) union (
@@ -101,61 +102,62 @@ async def article_parser(department: Department, session, data: Board):
                                   )
                                   )
                     }
-                """, board=board, num=num, title=title_parsed, writer=writer_parsed, is_notice=is_notice,
+                """, department=department.department, num=num, board=board, title=title_parsed,
+                                 writer=writer_parsed,
                                  write_date=write_date_parsed, read_count=read_count_parsed,
                                  article_url=data.article_url, content=text_parsed, crawled_time=now,
-                                 file_data=json.dumps(file_list))
+                                 file_data=json.dumps(file_list), is_notice=is_notice)
 
                 except edgedb.errors.ConstraintViolationError:
                     client.query("""
-                            update notice
-                            filter .article_url = <str>$article_url
-                            set {
-                                title := <str>$title,
-                                writer := <str>$writer,
-                                is_notice := <bool>$is_notice,
-                                write_date := <cal::local_date>$write_date,
-                                read_count := <int64>$read_count,
-                                content := <str>$content,
-                                update_crawled_time := <cal::local_datetime>$crawled_time,
-                                files := (with
-                                          raw_data := <json>$file_data,
-                                          for item in json_array_unpack(raw_data) union (
-                                            insert Files {
-                                                file_name := <str>item['file_name'],
-                                                file_url := <str>item['file_url']            
-                                            } unless conflict on .file_url else (
-                                            update Files
-                                            set {
-                                                file_name := <str>item['file_name'],
-                                                file_url := <str>item['file_url']            
-                                            }
-                                            )
-                                          )
-                                          )
-                            }
-                    """, title=title_parsed, write_date=write_date_parsed,
-                                 writer=writer_parsed, read_count=read_count_parsed,
-                                 content=text_parsed, crawled_time=now,
+                    update notice
+                    filter .article_url = <str>$article_url
+                    set {
+                        title := <str>$title,
+                        writer := <str>$writer,
+                        is_notice := <bool>$is_notice,
+                        write_date := <cal::local_date>$write_date,
+                        read_count := <int64>$read_count,
+                        content := <str>$content,
+                        update_crawled_time := <cal::local_datetime>$crawled_time,
+                        files := (with
+                                  raw_data := <json>$file_data,
+                                  for item in json_array_unpack(raw_data) union (
+                                    insert Files {
+                                        file_name := <str>item['file_name'],
+                                        file_url := <str>item['file_url']            
+                                    } unless conflict on .file_url else (
+                                    update Files
+                                    set {
+                                        file_name := <str>item['file_name'],
+                                        file_url := <str>item['file_url']            
+                                    }
+                                    )
+                                  )
+                                  )
+                    }
+                """, title=title_parsed, write_date=write_date_parsed, writer=writer_parsed,
+                                 read_count=read_count_parsed, content=text_parsed, crawled_time=now,
                                  article_url=data.article_url, file_data=json.dumps(file_list),
                                  is_notice=is_notice)
 
             else:
                 crawling_log.http_response_error(resp.status, data.article_url)
-    except (Exception, ClientConnectorError):
+    except (Exception, ClientConnectorError) as e:
+        print(e)
         raise ServerRefusedError(data)
 
     client.close()
 
 
 async def board_page_crawler(session, department: Department, board_index: int, page: int, ignore_date=False):
-    board = department.code[board_index]
+    mid, board_id = department.code[board_index]
 
     board_list = []
 
     crawling_log.board_crawling_log(department.name, department.boards[board_index].name, page)
 
-    url = f"https://dorm.koreatech.ac.kr/content/board/list.php?now_page={page}&GUBN=&SEARCH=&BOARDID={board}"
+    url = f"https://www.koreatech.ac.kr/board.es?mid={mid}&bid={board_id}&nPage={page}"
 
     date_of_last_article = 0
 
@@ -167,24 +169,24 @@ async def board_page_crawler(session, department: Department, board_index: int, 
                 html = await resp.text()
                 soup = BeautifulSoup(html, 'html.parser')
 
-                posts = soup.select("#board > table > tbody > tr")
+                posts = soup.select("#contents_body > div.board-list > table > tbody > tr")
 
                 for post in posts:
                     try:
-                        # board > table > tbody > tr:nth-child(1) > td:nth-child(1) > b
-                        # board > table > tbody > tr:nth-child(7) > td:nth-child(1)
-
-                        notice = post.select_one("td").text.strip()
-                        if notice == "[공지]":
+                        notice_icon = post.find("i", class_="icon_notice")
+                        if notice_icon:
                             is_notice = True
                         else:
                             is_notice = False
 
-                        article_url_parsed = post.select_one("td:nth-child(2) > a").get('href')
-                        article_url_parsed = re.sub("&now_page=\d*", "", article_url_parsed)
-                        article_url_parsed = f"https://dorm.koreatech.ac.kr/content/board/{article_url_parsed}"
-                        write_date_parsed = post.select_one("td:nth-child(4)").text.strip()
-                        write_date_parsed = datetime.strptime(write_date_parsed, '%Y-%m-%d')
+                        if is_notice:
+                            article_url_parsed = post.select_one("td.txt_left > strong > a").get("href")
+                        else:
+                            article_url_parsed = post.select_one("td.txt_left > a").get("href")
+                        article_url_parsed = f"https://koreatech.ac.kr{article_url_parsed}"
+                        write_date_parsed = post.select_one(
+                            f"td:nth-child({len(post.find_all('td')) - 2})").text.strip()
+                        write_date_parsed = datetime.strptime(write_date_parsed, '%Y.%m.%d')
 
                         date_of_last_article = write_date_parsed
 
@@ -201,14 +203,13 @@ async def board_page_crawler(session, department: Department, board_index: int, 
                         crawling_log.unknown_exception_error(e)
     except (Exception, ClientConnectorError):
         raise ServerRefusedError(page)
-
     if ignore_date:
         return board_list
     else:
         if datetime.today() - timedelta(days=7) > date_of_last_article:
             return board_list
         else:
-            board_list.extend(await board_page_crawler(session, department, board, page + 1))
+            board_list.extend(await board_page_crawler(session, mid, board_id, page + 1))
             return board_list
 
 
