@@ -5,7 +5,8 @@ from app.dataclass.enums.department import Department
 
 
 async def main_common_crawler():
-    departmentList = [Department.ARCH, Department.CSE, Department.MSE, Department.ACE, Department.IDE, Department.ITE,
+    # Remove Department.ACE because not logged-in user can't access the board
+    departmentList = [Department.ARCH, Department.CSE, Department.MSE, Department.IDE, Department.ITE,
                       Department.MECHANICAL, Department.MECHATRONICS, Department.SIM]
     for department in departmentList:
         for index in range(0, department.board_len()):
