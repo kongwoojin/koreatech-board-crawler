@@ -210,7 +210,7 @@ async def board_page_crawler(session, department: Department, board_index: int, 
         if datetime.today() - timedelta(days=7) > date_of_last_article:
             return board_list
         else:
-            board_list.extend(await board_page_crawler(session, mid, board_id, page + 1))
+            board_list.extend(await board_page_crawler(session, department, board_index, page + 1))
             return board_list
 
 
