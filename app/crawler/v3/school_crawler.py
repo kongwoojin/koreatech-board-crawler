@@ -10,10 +10,12 @@ from datetime import datetime, timedelta
 import edgedb
 
 from app.crawler.v3 import headers, gather_with_concurrency, ServerRefusedError
+from app.crawler.v3.utils.get_article_count import get_article_count
 from app.dataclass.board import Board
 from app.dataclass.enums.category import get_category
 from app.dataclass.enums.department import Department
 from app.db.v3 import edgedb_client
+from app.firebase.send_message import send_fcm_message
 from app.logs import crawling_log
 
 
@@ -259,6 +261,8 @@ async def board_crawler_task(department, session, board_list):
 
 
 async def sched_board_crawler(department: Department, board_index: int):
+    old_count = get_article_count(department, department.boards[board_index].board)
+
     # limit TCPConnector to 10 for avoid ServerDisconnectedError
     # Enable force_close to disable HTTP Keep-Alive
     connector = aiohttp.TCPConnector(limit=10, force_close=True)
@@ -266,3 +270,8 @@ async def sched_board_crawler(department: Department, board_index: int):
         board_list = await board_page_crawler(session, department, board_index, 1)
 
         await board_crawler_task(department, session, board_list)
+
+    new_count = get_article_count(department, department.boards[board_index].board)
+
+    if new_count - old_count > 0:
+        await send_fcm_message(department, department.boards[board_index].board)

@@ -7,6 +7,8 @@ from os import path
 sys.path.append(path.abspath('.'))
 
 from app.crawler.v3.main import main_crawler
+from app.firebase.init_firebase import init_firebase
+
 
 app = Rocketry(execution="async")
 
@@ -17,4 +19,5 @@ async def crawler():
 
 
 if __name__ == "__main__":
+    init_firebase()
     app.run()
