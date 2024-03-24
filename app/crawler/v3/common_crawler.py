@@ -202,6 +202,9 @@ async def board_page_crawler(session, department: Department, board_index: int, 
                             article_url=article_url_parsed,
                             is_notice=is_notice
                         ))
+                    except AttributeError:
+                        crawling_log.no_article_error(url)
+                        return []
                     except Exception as e:
                         crawling_log.unknown_exception_error(e)
     except (Exception, ClientConnectorError):
