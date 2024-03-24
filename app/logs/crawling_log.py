@@ -36,5 +36,15 @@ def unknown_last_page_error(url: str):
     print("{} {:<24}: Failed to get last page from {}".format(current_time(), caller, url))
 
 
+def main_crawler_start_log():
+    caller = os.path.splitext(os.path.basename(inspect.stack()[1].filename))[0]
+    print("{} {:<24}: Start main crawler".format(current_time(), caller))
+
+
+def main_crawler_finished_log():
+    caller = os.path.splitext(os.path.basename(inspect.stack()[1].filename))[0]
+    print("{} {:<24}: Main crawler Finished".format(current_time(), caller))
+
+
 def current_time():
     return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())

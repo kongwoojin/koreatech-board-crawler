@@ -2,6 +2,7 @@ import asyncio
 
 from app.crawler.v3 import dorm_crawler, school_crawler, common_crawler
 from app.dataclass.enums.department import Department
+from app.logs.crawling_log import main_crawler_start_log, main_crawler_finished_log
 
 
 async def main_common_crawler():
@@ -26,9 +27,10 @@ async def main_dorm_crawler():
 
 
 async def main_crawler():
+    main_crawler_start_log()
     await asyncio.gather(
         main_school_crawler(),
         main_dorm_crawler(),
         main_common_crawler()
     )
-
+    main_crawler_finished_log()
