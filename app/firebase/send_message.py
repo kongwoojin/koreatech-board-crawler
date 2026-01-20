@@ -28,7 +28,7 @@ async def send_fcm_message(department: Department, board: str):
     article_id_list = []
 
     for article in articles:
-        article_id_list.append(str(article.id))
+        article_id_list.append(str(article['id']))
 
     data = {
         'screen': 'board',
