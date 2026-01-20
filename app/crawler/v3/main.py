@@ -5,32 +5,32 @@ from app.dataclass.enums.department import Department
 from app.logs.crawling_log import main_crawler_start_log, main_crawler_finished_log
 
 
-async def main_common_crawler():
+async def main_common_crawler(send_notification: bool = True):
     # Remove Department.ACE because not logged-in user can't access the board
     departmentList = [Department.ARCH, Department.CSE, Department.MSE, Department.IDE, Department.ITE,
                       Department.MECHANICAL, Department.MECHATRONICS, Department.SIM]
     for department in departmentList:
         for index in range(0, department.board_len()):
-            await common_crawler.sched_board_crawler(department, index)
+            await common_crawler.sched_board_crawler(department, index, send_notification)
 
 
-async def main_school_crawler():
+async def main_school_crawler(send_notification: bool = True):
     department = Department.SCHOOL
     for index in range(0, department.board_len()):
-        await school_crawler.sched_board_crawler(department, index)
+        await school_crawler.sched_board_crawler(department, index, send_notification)
 
 
-async def main_dorm_crawler():
+async def main_dorm_crawler(send_notification: bool = True):
     department = Department.DORM
     for index in range(0, department.board_len()):
-        await dorm_crawler.sched_board_crawler(department, index)
+        await dorm_crawler.sched_board_crawler(department, index, send_notification)
 
 
-async def main_crawler():
+async def main_crawler(send_notification: bool = True):
     main_crawler_start_log()
     await asyncio.gather(
-        main_school_crawler(),
-        main_dorm_crawler(),
-        main_common_crawler()
+        main_school_crawler(send_notification),
+        main_dorm_crawler(send_notification),
+        main_common_crawler(send_notification)
     )
     main_crawler_finished_log()

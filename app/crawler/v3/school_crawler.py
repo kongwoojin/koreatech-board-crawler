@@ -271,7 +271,7 @@ async def manual_board_crawler(department: Department, board_index: int, start_p
         await parse_article_from_list(department, session, board_list)
 
 
-async def sched_board_crawler(department: Department, board_index: int):
+async def sched_board_crawler(department: Department, board_index: int, send_notification: bool = True):
     """
     Board crawler for scheduled crawling
 
@@ -279,6 +279,7 @@ async def sched_board_crawler(department: Department, board_index: int):
 
     :param department: department to crawl
     :param board_index: index of board
+    :param send_notification: whether to send FCM notification
     """
     old_count = get_article_count(department, department.boards[board_index].board)
 
@@ -295,7 +296,7 @@ async def sched_board_crawler(department: Department, board_index: int):
 
     new_count = get_article_count(department, department.boards[board_index].board)
 
-    if new_count - old_count > 0:
+    if send_notification and new_count - old_count > 0:
         await send_fcm_message(department, department.boards[board_index].board)
 
     await check_article_removed(department, board_index)
