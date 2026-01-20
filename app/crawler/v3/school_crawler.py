@@ -7,14 +7,13 @@ import aiohttp
 from aiohttp import ClientConnectorError
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-import edgedb
 
 from app.crawler.v3 import headers, gather_with_concurrency, ServerRefusedError, DAYS_TO_PARSE
 from app.crawler.v3.utils.get_article_count import get_article_count
 from app.dataclass.board import Board
 from app.dataclass.enums.category import get_category
 from app.dataclass.enums.department import Department
-from app.db.v3 import edgedb_client
+from app.db.v3 import postgres_client
 from app.firebase.send_message import send_fcm_message
 from app.logs import crawling_log
 
@@ -29,7 +28,7 @@ async def article_parser(department: Department, session, data: Board):
     :param session: aiohttp session
     :param data: article list to parse
     """
-    client = edgedb_client()
+    client = postgres_client()
     now = datetime.now()
 
     board = data.board
@@ -86,78 +85,21 @@ async def article_parser(department: Department, session, data: Board):
                     crawling_log.cannot_read_article_error(data.article_url)
                     return
 
-                try:
-                    client.query("""
-                    insert notice {
-                        department := <Department>Department.SCHOOL,
-                        board := <Board><str>$board,
-                        num := <int64>$num,
-                        is_notice := <bool>$is_notice,
-                        title := <str>$title,
-                        writer := <str>$writer,
-                        write_date := <cal::local_date>$write_date,
-                        read_count := <int64>$read_count,
-                        article_url := <str>$article_url,
-                        content := <str>$content,
-                        init_crawled_time := <cal::local_datetime>$crawled_time,
-                        update_crawled_time:=<cal::local_datetime>$crawled_time,
-                        notice_start_date:=<cal::local_date>$write_date,
-                        notice_end_date:=<cal::local_date>'9999-12-31',
-                        category:=<Category><str>$category,
-                        files := (with
-                                  raw_data := <json>$file_data,
-                                  for item in json_array_unpack(raw_data) union (
-                                    insert Files {
-                                        file_name := <str>item['file_name'],
-                                        file_url := <str>item['file_url']            
-                                    } unless conflict on .file_url else (
-                                    update Files
-                                    set {
-                                        file_name := <str>item['file_name'],
-                                        file_url := <str>item['file_url']            
-                                    }
-                                    )
-                                  )
-                                  )
-                    }
-                """, num=num, board=board, title=title_parsed,
-                                 writer=writer_parsed, category=category,
-                                 write_date=write_date_parsed, read_count=read_count_parsed,
-                                 article_url=data.article_url, content=text_parsed, crawled_time=now,
-                                 file_data=json.dumps(file_list), is_notice=is_notice)
-
-                except edgedb.errors.ConstraintViolationError:
-                    client.query("""
-                    update notice
-                    filter .article_url = <str>$article_url
-                    set {
-                        title := <str>$title,
-                        writer := <str>$writer,
-                        is_notice := <bool>$is_notice,
-                        write_date := <cal::local_date>$write_date,
-                        read_count := <int64>$read_count,
-                        content := <str>$content,
-                        update_crawled_time := <cal::local_datetime>$crawled_time,
-                        files := (with
-                                  raw_data := <json>$file_data,
-                                  for item in json_array_unpack(raw_data) union (
-                                    insert Files {
-                                        file_name := <str>item['file_name'],
-                                        file_url := <str>item['file_url']            
-                                    } unless conflict on .file_url else (
-                                    update Files
-                                    set {
-                                        file_name := <str>item['file_name'],
-                                        file_url := <str>item['file_url']            
-                                    }
-                                    )
-                                  )
-                                  )
-                    }
-                """, title=title_parsed, write_date=write_date_parsed, writer=writer_parsed,
-                                 read_count=read_count_parsed, content=text_parsed, crawled_time=now,
-                                 article_url=data.article_url, file_data=json.dumps(file_list),
-                                 is_notice=is_notice)
+                client.insert_notice(
+                    department="SCHOOL",
+                    board=board,
+                    num=num,
+                    is_notice=is_notice,
+                    title=title_parsed,
+                    writer=writer_parsed,
+                    write_date=write_date_parsed,
+                    read_count=read_count_parsed,
+                    article_url=data.article_url,
+                    content=text_parsed,
+                    crawled_time=now,
+                    category=category,
+                    file_data=json.dumps(file_list)
+                )
 
             else:
                 crawling_log.http_response_error(resp.status, data.article_url)
@@ -251,16 +193,9 @@ async def board_remove_notice(department: Department, board: str):
     :param department: department to crawl
     :param board: board to crawl
     """
-    client = edgedb_client()
-
-    client.query("""
-        update notice
-        filter .department=<Department><str>$department AND .board=<Board><str>$board AND
-          .is_notice=true
-        set {
-          is_notice := false
-        };
-    """, department=department.department, board=board)
+    client = postgres_client()
+    client.update_notice_not_notice(department.department, board)
+    client.close()
 
 
 async def parse_article_from_list(department, session, board_list):
@@ -378,33 +313,31 @@ async def remove_article(session, department: Department, board_index: int, boar
     if board_list is None:
         board_list = await article_list_crawler(session, department, board_index, page, ignore_date=True)
 
-    client = edgedb_client()
-    get_article_query = """
-        SELECT notice 
-            { id, num, title, writer, write_date, read_count, 
-            is_new := .init_crawled_time = .update_crawled_time, is_notice, article_url }
-            FILTER .department=<Department><str>$department AND .board=<Board><str>$board order by .is_notice DESC 
-            THEN .write_date DESC
-            THEN .num desc offset <int64>$offset limit <int64>$num_of_items
-        """
+    client = postgres_client()
 
     num_of_items = 20
 
-    db_board_list = client.query(get_article_query, department=department.department,
-                                 board=department.boards[board_index].board,
-                                 offset=(page - 1) * num_of_items, num_of_items=num_of_items)
+    db_board_list = client.get_articles(
+        department=department.department,
+        board=department.boards[board_index].board,
+        offset=(page - 1) * num_of_items,
+        limit=num_of_items
+    )
 
     i = 0
     while i < num_of_items:
         article = board_list[i]
         db_article = db_board_list[i]
 
-        if article.article_url != db_article.article_url:
-            crawling_log.article_remove_log(department, department.boards[board_index].board, db_article.title)
-            client.query("DELETE notice filter .id=<uuid>$id", id=db_article.id)
+        if article.article_url != db_article['article_url']:
+            crawling_log.article_remove_log(department, department.boards[board_index].board, db_article['title'])
+            client.delete_notice(db_article['id'])
+            client.close()
             await remove_article(session, department, board_index, board_list, page)
             return
         i += 1
+
+    client.close()
 
     is_removed = await compare_article_count(session, department, board_index)
 
